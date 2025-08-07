@@ -7,7 +7,6 @@ module.exports = {
       ],
       numberOfRuns: 1,
       settings: {
-        preset: "mobile",
         formFactor: "mobile",
         screenEmulation: { mobile: true, disabled: false }
       }
