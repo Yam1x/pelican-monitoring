@@ -73,7 +73,15 @@ jobs:
 
           echo "Сomparing content:"
           cat <<EOF > expected_robots.txt
-          # *
+          # 
+          User-agent: 
+          Disallow: /component
+
+          # Host
+          Host: https://chelzoo
+
+          # Sitemaps
+          Sitemap: https://chelzoo.ru/api/get-sitema
           EOF
 
               echo "Comparing with expected content..."
@@ -93,11 +101,21 @@ jobs:
         run: lhci autorun --config .lighthouserc.desktop.js
         continue-on-error: true
         id: lhci_desktop
+      
+      - name: Parse LHCI report
+        run: node parse-lhci.js
+        continue-on-error: true
+        id: lhci_parser
 
       - name: Run Lighthouse CI - Mobile
         run: lhci autorun --config .lighthouserc.mobile.js
         continue-on-error: true
         id: lhci_mobile
+
+      - name: Parse LHCI report
+        run: node parse-lhci.js
+        continue-on-error: true
+        id: lhci_parser
 
       - name: Upload JMeter Results
         uses: actions/upload-artifact@v4
