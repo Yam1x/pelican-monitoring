@@ -2,7 +2,7 @@ const fs = require('fs');
 const xml2js = require('xml2js');
 
 (async () => {
-  const data = fs.readFileSync('./result/result.jtl');
+  const data = fs.readFileSync('./result/documentsPage.jtl');
   const result = await xml2js.parseStringPromise(data);
 
   const samples = result.testResults.httpSample;
