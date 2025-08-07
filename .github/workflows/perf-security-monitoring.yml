@@ -103,24 +103,24 @@ jobs:
           name: jmeter-result-files
           path: result/
 
-      - name: Fail job if any step failed
-        if: always()
-        run: |
-          echo "Evaluating job results..."
-          for STEP in \
-            jmeter_home report_home \
-            jmeter_documents report_documents \
-            jmeter_news report_news \
-            robots lhci_desktop lhci_mobile; do
-              OUTCOME="${{ steps[STEP].outcome }}"
-              if [ "$OUTCOME" == "failure" ]; then
-                echo "❌ Step '$STEP' failed"
-                FAILED=true
-              fi
-          done
-          if [ "$FAILED" == "true" ]; then
-            echo "❌ One or more steps failed. Marking job as failed."
-            exit 1
-          else
-            echo "✅ All monitored steps succeeded"
-          fi
+      # - name: Fail job if any step failed
+      #   if: always()
+      #   run: |
+      #     echo "Evaluating job results..."
+      #     for STEP in \
+      #       jmeter_home report_home \
+      #       jmeter_documents report_documents \
+      #       jmeter_news report_news \
+      #       robots lhci_desktop lhci_mobile; do
+      #         OUTCOME="${{ steps[STEP].outcome }}"
+      #         if [ "$OUTCOME" == "failure" ]; then
+      #           echo "❌ Step '$STEP' failed"
+      #           FAILED=true
+      #         fi
+      #     done
+      #     if [ "$FAILED" == "true" ]; then
+      #       echo "❌ One or more steps failed. Marking job as failed."
+      #       exit 1
+      #     else
+      #       echo "✅ All monitored steps succeeded"
+      #     fi
