@@ -24,13 +24,27 @@ jobs:
       - name: Install Node dependencies
         run: npm ci
 
-      - name: Install Apache JMeter
+      - name: Cache JMeter
+        id: cache-jmeter
+        uses: actions/cache@v4
+        with:
+          path: ./apache-jmeter
+          key: jmeter-${{ runner.os }}-v5.6.3
+      
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
+      - name: Download JMeter if not cached
+        if: steps.cache-jmeter.outputs.cache-hit != 'true'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y openjdk-17-jdk
-          wget https://dlcdn.apache.org//jmeter/binaries/apache-jmeter-5.6.3.tgz
-          tar -xzf apache-jmeter-5.6.3.tgz
-          echo "$PWD/apache-jmeter-5.6.3/bin" >> $GITHUB_PATH
+          curl -L https://downloads.apache.org/jmeter/binaries/apache-jmeter-5.6.3.tgz -o jmeter.tgz
+          mkdir apache-jmeter
+          tar -xzf jmeter.tgz --strip-components=1 -C apache-jmeter
 
       - name: Run JMeter load test - Home Page
         run: |
@@ -73,15 +87,15 @@ jobs:
 
           echo "Сomparing content:"
           cat <<EOF > expected_robots.txt
-          # 
-          User-agent: 
-          Disallow: /component
+          # *
+          User-agent: *
+          Disallow: /components
 
           # Host
-          Host: https://chelzoo
+          Host: https://chelzoo.ru
 
           # Sitemaps
-          Sitemap: https://chelzoo.ru/api/get-sitema
+          Sitemap: https://chelzoo.ru/api/get-sitemap
           EOF
 
               echo "Comparing with expected content..."
@@ -102,10 +116,10 @@ jobs:
         continue-on-error: true
         id: lhci_desktop
       
-      - name: Parse LHCI report
-        run: node parse-lhci.js
-        continue-on-error: true
-        id: lhci_parser
+      # - name: Parse LHCI report
+      #   run: node parse-lhci.js
+      #   continue-on-error: true
+      #   id: lhci_parser
 
       # - name: Run Lighthouse CI - Mobile
       #   run: lhci autorun --config .lighthouserc.mobile.js
