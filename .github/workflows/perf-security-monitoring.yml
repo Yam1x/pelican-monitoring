@@ -1,0 +1,126 @@
+name: Perf + Security + Accessibility Monitoring on Prod
+
+on: 
+  push:
+    branches:
+      - feature/*
+
+jobs:
+  monitor:
+    runs-on: ubuntu-24.04
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Apache JMeter
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openjdk-17-jdk
+          wget https://dlcdn.apache.org//jmeter/binaries/apache-jmeter-5.6.3.tgz
+          tar -xzf apache-jmeter-5.6.3.tgz
+          echo "$PWD/apache-jmeter-5.6.3/bin" >> $GITHUB_PATH
+
+      - name: Run JMeter load test - Home Page
+        run: |
+          mkdir -p result
+          jmeter -n -t ./tests/homePageTest.jmx -l ./result/result.jtl
+        continue-on-error: true
+        id: jmeter_home
+
+      - name: Parse JMeter result - Home Page
+        run: node tests/homePage-jmeter-report.js
+        continue-on-error: true
+        id: report_home
+
+      - name: Run JMeter load test - Documents Page
+        run: |
+          jmeter -n -t ./tests/documentsPageTest.jmx -l ./result/result.jtl
+        continue-on-error: true
+        id: jmeter_documents
+
+      - name: Parse JMeter result - Documents Page
+        run: node tests/documentsPage-jmeter-report.js
+        continue-on-error: true
+        id: report_documents
+
+      - name: Run JMeter load test - News Page
+        run: |
+          jmeter -n -t ./tests/newsPageTest.jmx -l ./result/result.jtl
+        continue-on-error: true
+        id: jmeter_news
+
+      - name: Parse JMeter result - News Page
+        run: node tests/newsPage-jmeter-report.js
+        continue-on-error: true
+        id: report_news
+
+      - name: Run robots.txt validation test
+        run: |
+          curl -s https://chelzoo.ru/robots.txt > robots.txt
+          echo "Validating robots.txt..."
+          diff robots.txt - <<EOF
+          # *
+          User-agent: *
+          Disallow: /components
+
+          # Host
+          Host: https://chelzoo.ru
+
+          # Sitemaps
+          Sitemap: https://chelzoo.ru/api/get-sitemap
+          EOF
+        continue-on-error: true
+        id: robots
+
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli
+
+      - name: Run Lighthouse CI - Desktop
+        run: lhci autorun --config .lighthouserc.desktop.js
+        continue-on-error: true
+        id: lhci_desktop
+
+      - name: Run Lighthouse CI - Mobile
+        run: lhci autorun --config .lighthouserc.mobile.js
+        continue-on-error: true
+        id: lhci_mobile
+
+      - name: Upload JMeter Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmeter-result-files
+          path: result/
+
+      - name: Fail job if any step failed
+        if: always()
+        run: |
+          echo "Evaluating job results..."
+          for STEP in \
+            jmeter_home report_home \
+            jmeter_documents report_documents \
+            jmeter_news report_news \
+            robots lhci_desktop lhci_mobile; do
+              OUTCOME="${{ steps[STEP].outcome }}"
+              if [ "$OUTCOME" == "failure" ]; then
+                echo "❌ Step '$STEP' failed"
+                FAILED=true
+              fi
+          done
+          if [ "$FAILED" == "true" ]; then
+            echo "❌ One or more steps failed. Marking job as failed."
+            exit 1
+          else
+            echo "✅ All monitored steps succeeded"
+          fi
