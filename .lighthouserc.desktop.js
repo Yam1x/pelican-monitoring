@@ -1,7 +1,6 @@
 module.exports = {
   ci: {
     collect: {
-      startServerCommand: 'npm run start',
       url: ['https://chelzoo.ru'],
       numberOfRuns: 1,
       settings: {
