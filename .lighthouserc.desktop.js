@@ -1,15 +1,18 @@
 module.exports = {
   ci: {
     collect: {
-      url: [
-        "https://chelzoo.ru",
-        "https://chelzoo.ru/news"
-      ],
+      startServerCommand: 'npm run start',
+      url: ['https://chelzoo.ru'],
       numberOfRuns: 1,
       settings: {
-        preset: "desktop",
+        preset: 'desktop',
         output: ['html', 'json'],
-      }
+      },
+    },
+    upload: {
+      target: 'filesystem',
+      outputDir: './lhci-report',
+      reportFilenamePattern: 'report-{{url}}-{{hash}}.html',
     },
     assert: {
       assertions: {
