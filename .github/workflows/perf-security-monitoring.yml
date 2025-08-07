@@ -11,10 +11,12 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
+
       - name: Cache node modules
         uses: actions/cache@v4
         with:
@@ -22,46 +24,59 @@ jobs:
           key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-npm-
+
       - name: Install Node dependencies
         run: npm ci
+
       - name: Set up Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
           java-version: '17'
+
       - name: Cache JMeter
         id: cache-jmeter
         uses: actions/cache@v4
         with:
           path: ./apache-jmeter-5.6.3
           key: jmeter-${{ runner.os }}-v5.6.3
+
       - name: Download JMeter if not cached
         if: steps.cache-jmeter.outputs.cache-hit != 'true'
         run: |
           wget https://dlcdn.apache.org//jmeter/binaries/apache-jmeter-5.6.3.tgz
           tar -xzf apache-jmeter-5.6.3.tgz
+
       - name: Add JMeter to PATH
         run: echo "$PWD/apache-jmeter-5.6.3/bin" >> $GITHUB_PATH
+
       - name: Create result directory
         run: mkdir -p result
+
       - name: Run JMeter load test - Home Page
         run: jmeter -n -t ./tests/homePageTest.jmx -l ./result/homePage.jtl
         continue-on-error: true
+
       - name: Parse JMeter result - Home Page
         run: node tests/homePage-jmeter-report.js
         continue-on-error: true
+
       - name: Run JMeter load test - Documents Page
         run: jmeter -n -t ./tests/documentsPageTest.jmx -l ./result/documentsPage.jtl
         continue-on-error: true
+
       - name: Parse JMeter result - Documents Page
         run: node tests/documentsPage-jmeter-report.js
         continue-on-error: true
+
       - name: Run JMeter load test - News Page
         run: jmeter -n -t ./tests/newsPageTest.jmx -l ./result/newsPage.jtl
         continue-on-error: true
+
       - name: Parse JMeter result - News Page
         run: node tests/newsPage-jmeter-report.js
         continue-on-error: true
+
       - name: Validate robots.txt
         run: |
           echo "Fetching robots.txt..."
@@ -71,8 +86,10 @@ jobs:
           # *
           User-agent: *
           Disallow: /components
+
           # Host
           Host: https://chelzoo.ru
+
           # Sitemaps
           Sitemap: https://chelzoo.ru/api/get-sitemap
           EOF
@@ -83,9 +100,11 @@ jobs:
           fi
           echo "✅ robots.txt matches expected content."
         continue-on-error: true
+
       - name: Run Lighthouse CI - Desktop
         run: npx lhci autorun --config .lighthouserc.desktop.js
         continue-on-error: true
+        
       - name: Upload JMeter Results
         uses: actions/upload-artifact@v4
         with:
