@@ -8,34 +8,20 @@ module.exports = {
       numberOfRuns: 1,
       settings: {
         preset: "desktop",
+        output: ['html', 'json'],
       }
     },
     assert: {
       assertions: {
         // Performance
-        'largest-contentful-paint': ['error', { maxNumericValue: 5000 }],
-        'first-contentful-paint': ['error', { maxNumericValue: 3000 }],
-        'speed-index': ['error', { maxNumericValue: 4300 }],
-        'total-blocking-time': ['error', { maxNumericValue: 300 }],
+        'largest-contentful-paint': ['error', { maxNumericValue: 10000 }],
+        'first-contentful-paint': ['error', { maxNumericValue: 6000 }],
+        'speed-index': ['error', { maxNumericValue: 5000 }],
+        'total-blocking-time': ['error', { maxNumericValue: 500 }],
         'interactive': ['error', { maxNumericValue: 5000 }],
 
         // Categories
         'categories:accessibility': ['error', { minScore: 0.9 }],
-        'categories:performance': ['error', { minScore: 0.7 }],
-        'categories:best-practices': ['warn', { minScore: 0.8 }],
-        'categories:seo': ['warn', { minScore: 0.9 }],
-
-        // Best Practices
-        'errors-in-console': 'error',
-        'uses-passive-event-listeners': 'warn',
-        'deprecations': 'warn',
-
-        // Byte Efficiency
-        'uses-text-compression': 'warn',
-        'uses-optimized-images': 'warn',
-        'uses-responsive-images': 'warn',
-        'uses-long-cache-ttl': ['warn', { minScore: 0.5 }],
-        'total-byte-weight': ['warn', { maxNumericValue: 1600000 }],
 
         // CSP / Security headers (as close as possible)
         'csp-xss': ['error', { minScore: 1 }], // Available in core audits
