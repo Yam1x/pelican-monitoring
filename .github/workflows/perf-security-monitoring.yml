@@ -54,7 +54,7 @@ jobs:
         run: mkdir -p result
 
       - name: Run JMeter load test - Home Page
-        run: jmeter -n -t ./tests/homePageTest.jmx -l ./result/homePage.jtl
+        run: jmeter -n -t ./tests/homePageTest.jmx -l ./result/homePage.jtl -Jjmeter.save.saveservice.output_format=xml
         continue-on-error: true
 
       - name: Parse JMeter result - Home Page
@@ -62,7 +62,7 @@ jobs:
         continue-on-error: true
 
       - name: Run JMeter load test - Documents Page
-        run: jmeter -n -t ./tests/documentsPageTest.jmx -l ./result/documentsPage.jtl
+        run: jmeter -n -t ./tests/documentsPageTest.jmx -l ./result/documentsPage.jtl -Jjmeter.save.saveservice.output_format=xml
         continue-on-error: true
 
       - name: Parse JMeter result - Documents Page
@@ -70,7 +70,7 @@ jobs:
         continue-on-error: true
 
       - name: Run JMeter load test - News Page
-        run: jmeter -n -t ./tests/newsPageTest.jmx -l ./result/newsPage.jtl
+        run: jmeter -n -t ./tests/newsPageTest.jmx -l ./result/newsPage.jtl -Jjmeter.save.saveservice.output_format=xml
         continue-on-error: true
 
       - name: Parse JMeter result - News Page
@@ -104,7 +104,7 @@ jobs:
       - name: Run Lighthouse CI - Desktop
         run: npx lhci autorun --config .lighthouserc.desktop.js
         continue-on-error: true
-        
+
       - name: Upload JMeter Results
         uses: actions/upload-artifact@v4
         with:
