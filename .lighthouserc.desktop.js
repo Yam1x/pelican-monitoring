@@ -34,10 +34,5 @@ module.exports = {
         'has-hsts': ['error', { minScore: 1 }]
       }
     },
-    upload: {
-      target: 'filesystem',
-      outputDir: './lhci-report',
-      reportFilenamePattern: 'report-{{url}}-{{hash}}.html'
-    }
   }
 };
