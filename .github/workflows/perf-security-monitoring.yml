@@ -40,9 +40,7 @@ jobs:
         id: jmeter_home
 
       - name: Parse JMeter result - Home Page
-        run: |
-          npm install xml2js
-          node tests/homePage-jmeter-report.js
+        run: node tests/homePage-jmeter-report.js
         continue-on-error: true
         id: report_home
 
@@ -53,9 +51,7 @@ jobs:
         id: jmeter_documents
 
       - name: Parse JMeter result - Documents Page
-        run: |
-          npm install xml2js
-          node tests/documentsPage-jmeter-report.js
+        run: node tests/documentsPage-jmeter-report.js
         continue-on-error: true
         id: report_documents
 
@@ -66,9 +62,7 @@ jobs:
         id: jmeter_news
 
       - name: Parse JMeter result - News Page
-        run: |
-          npm install xml2js
-          node tests/newsPage-jmeter-report.js
+        run: node tests/newsPage-jmeter-report.js
         continue-on-error: true
         id: report_news
 
@@ -77,7 +71,7 @@ jobs:
           echo "Fetching robots.txt..."
           curl -sfL https://chelzoo.ru/robots.txt -o robots.txt
 
-          echo "Expected content:"
+          echo "Сomparing content:"
           cat <<EOF > expected_robots.txt
           # *
           User-agent: *
@@ -85,9 +79,6 @@ jobs:
 
           # Host
           Host: https://chelzoo.ru
-
-          # Sitemaps
-          Sitemap: https://chelzoo.ru/api/get-sitemap
           EOF
 
               echo "Comparing with expected content..."
