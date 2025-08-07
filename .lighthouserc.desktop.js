@@ -9,9 +9,7 @@ module.exports = {
       },
     },
     upload: {
-      target: 'filesystem',
-      outputDir: './lhci-report',
-      reportFilenamePattern: 'report-{{url}}-{{hash}}.html',
+      target: 'temporary-public-storage',
     },
     assert: {
       assertions: {
