@@ -149,9 +149,9 @@ jobs:
             HEADER=$(curl -s -I "$url" | grep -i '^Cache-Control:' | tr -d '\r')
 
             if [[ "$HEADER" == "$EXPECTED" ]]; then
-              echo "✅ OK: $url"
+              echo "✅PASSED: $url"
             else
-              echo "❌ BAD: $url"
+              echo "❌FAILED: $url"
               echo "   Found:    $HEADER"
               echo "   Expected: $EXPECTED"
               EXITCODE=1
