@@ -14,10 +14,10 @@ module.exports = {
     assert: {
       assertions: {
         // Performance
-        'largest-contentful-paint': ['error', { maxNumericValue: 10000 }],
-        'first-contentful-paint': ['error', { maxNumericValue: 6000 }],
-        'speed-index': ['error', { maxNumericValue: 5000 }],
-        'total-blocking-time': ['error', { maxNumericValue: 500 }],
+        'largest-contentful-paint': ['error', { maxNumericValue: 2000 }],
+        'first-contentful-paint': ['error', { maxNumericValue: 1000 }],
+        'speed-index': ['error', { maxNumericValue: 100 }],
+        'total-blocking-time': ['error', { maxNumericValue: 20 }],
         'interactive': ['error', { maxNumericValue: 5000 }],
 
         // Categories
@@ -30,7 +30,7 @@ module.exports = {
         'redirects-http': 'error',
         'uses-rel-preconnect': 'warn',
 
-        // HSTS – Only "has-hsts" is available
+        // HSTS – Only "has-hs  ts" is available
         'has-hsts': ['error', { minScore: 1 }]
       }
     },
