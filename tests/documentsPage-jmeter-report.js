@@ -32,8 +32,8 @@ const xml2js = require('xml2js');
     console.log(`  95-й процентиль: ${p95}ms`);
     console.log(`  99-й процентиль: ${p99}ms`);
     console.log(`  Ошибочные запросы: ${errorCount}`);
-    if (max >= 10000) throw new Error(`❌ Максимальное время ответа слишком высокое: ${max}`);
-    if (avg >= 1600) throw new Error(`❌ Среднее время ответа слишком высокое: ${avg}`);
+    if (max >= 1000) throw new Error(`❌ Максимальное время ответа слишком высокое: ${max}`);
+    if (avg >= 200) throw new Error(`❌ Среднее время ответа слишком высокое: ${avg}`);
     if (errorCount !== 0) throw new Error(`❌ Найдены ошибки в запросах JMeter`);
   } catch (err) {
     console.error(`Ошибка обработки результатов: ${err.message}`);
