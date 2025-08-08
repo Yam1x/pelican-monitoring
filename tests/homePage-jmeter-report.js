@@ -2,7 +2,7 @@ const fs = require('fs');
 const xml2js = require('xml2js');
 
 (async () => {
-  const filePath = './result/documentsPage.jtl';
+  const filePath = './result/homePage.jtl';
   if (!fs.existsSync(filePath)) {
     console.error(`Файл не найден: ${filePath}`);
     process.exit(1);
