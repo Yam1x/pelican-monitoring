@@ -6,27 +6,39 @@ on:
       - feature/*
 
 jobs:
-  performance-non-functional-tests:
+  validate-robots:
     runs-on: ubuntu-24.04
+    timeout-minutes: 2
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Validate robots.txt
+        id: robots_txt_validation
+        run: |
+          echo "Fetching robots.txt..."
+          curl -sfL https://chelzoo.ru/robots.txt -o robots.txt
+          echo "Reading actual content..."
+          cat <<EOF > expected_robots.txt
+          # *
+          User-agent: *
+          Disallow: /components
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
+          # Host
+          Host: https://chelzoo.ru
 
-      - name: Cache node modules
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
+          # Sitemaps
+          Sitemap: https://chelzoo.ru/api/get-sitemap
+          EOF
+          echo "Comparing with expected content..."
+          if ! diff -u expected_robots.txt robots.txt; then
+            echo "❌ robots.txt does not match the expected content."
+            exit 1
+          fi
+          echo "✅ robots.txt matches expected content."
 
-      - name: Install Node dependencies
-        run: npm ci
+  jmeter-tests:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Set up Java
         uses: actions/setup-java@v4
@@ -53,64 +65,20 @@ jobs:
       - name: Create result directory
         run: mkdir -p result
 
-      - name: Run JMeter load test - Home Page
-        run: jmeter -n -t ./tests/homePageTest.jmx -l ./result/homePage.jtl -Jjmeter.save.saveservice.output_format=xml
-        continue-on-error: true
-
-      - name: Parse JMeter result - Home Page
-        run: node tests/homePage-jmeter-report.js
-        continue-on-error: true
-
-      - name: Run JMeter load test - Documents Page
-        run: jmeter -n -t ./tests/documentsPageTest.jmx -l ./result/documentsPage.jtl -Jjmeter.save.saveservice.output_format=xml
-        continue-on-error: true
-
-      - name: Parse JMeter result - Documents Page
-        run: node tests/documentsPage-jmeter-report.js
-        continue-on-error: true
-
-      - name: Run JMeter load test - News Page
-        run: jmeter -n -t ./tests/newsPageTest.jmx -l ./result/newsPage.jtl -Jjmeter.save.saveservice.output_format=xml
-        continue-on-error: true
-
-      - name: Parse JMeter result - News Page
-        id: parse_jmeter_news
-        run: node tests/newsPage-jmeter-report.js
-        continue-on-error: true
-
-      - name: Validate robots.txt
-        id: robots_txt_validation
+      - name: Run and parse JMeter - Home Page
         run: |
-          echo "Fetching robots.txt..."
-          curl -sfL https://chelzoo.ru/robots.txt -o robots.txt
-          echo "Reaging actual content..."
-          cat <<EOF > expected_robots.txt
-          # *
-          User-agent: *
-          Disallow: /components
+          jmeter -n -t ./tests/homePageTest.jmx -l ./result/homePage.jtl -Jjmeter.save.saveservice.output_format=xml
+          node tests/homePage-jmeter-report.js
 
-          # Host
-          Host: https://chelzoo.ru
-
-          # Sitemaps
-          Sitemap: https://chelzoo.ru/api/get-sitemap
-          EOF
-          echo "Comparing with expected content..."
-          if ! diff -u expected_robots.txt robots.txt; then
-            echo "❌ robots.txt does not match the expected content."
-            exit 1
-          fi
-          echo "✅ robots.txt matches expected content."
-        continue-on-error: true
-
-      - name: Install Lighthouse CI
+      - name: Run and parse JMeter - Documents Page
         run: |
-          npm install && npm install -g @lhci/cli@0.15.x
+          jmeter -n -t ./tests/documentsPageTest.jmx -l ./result/documentsPage.jtl -Jjmeter.save.saveservice.output_format=xml
+          node tests/documentsPage-jmeter-report.js
 
-      - name: Run Lighthouse CI - Desktop
-        id: lighthouse_ci
-        run: lhci autorun --config .lighthouserc.desktop.js
-        continue-on-error: true
+      - name: Run and parse JMeter - News Page
+        run: |
+          jmeter -n -t ./tests/newsPageTest.jmx -l ./result/newsPage.jtl -Jjmeter.save.saveservice.output_format=xml
+          node tests/newsPage-jmeter-report.js
 
       - name: Upload JMeter Results
         uses: actions/upload-artifact@v4
@@ -118,23 +86,57 @@ jobs:
           name: jmeter-result-files
           path: result/
 
-      # - name: Notify on Lighthouse CI failure
-      #   if: steps.lighthouse_ci.outcome == 'failure'
-      #   run: |
-      #     curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-      #     -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-      #     -d text="❌ Lighthouse CI step failed. Check the run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+  lighthouse:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 3
+    steps:
+      - uses: actions/checkout@v4
 
-      # - name: Notify on JMeter Parse failure
-      #   if: steps.parse_jmeter_news.outcome == 'failure'
-      #   run: |
-      #     curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-      #     -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-      #     -d text="❌ JMeter News Page parsing failed. Check the run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-      # - name: Notify on robots.txt validation failure
-      #   if: steps.robots_txt_validation.outcome == 'failure'
-      #   run: |
-      #     curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
-      #     -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-      #     -d text="❌ robots.txt validation failed. Check the run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install Node dependencies
+        run: npm ci
+
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli@0.15.x
+
+      - name: Run Lighthouse CI - Desktop
+        run: lhci autorun --config .lighthouserc.desktop.js
+
+  # notify:
+  #   runs-on: ubuntu-24.04
+  #   needs: [validate-robots, jmeter-tests, lighthouse]
+  #   if: always()
+  #   steps:
+  #     - name: Notify on failure
+  #       run: |
+  #         FAIL_MSG=""
+
+  #         if [ "${{ needs.validate-robots.result }}" != "success" ]; then
+  #           FAIL_MSG+="\n❌ Проблема с robots.txt"
+  #         fi
+
+  #         if [ "${{ needs.jmeter-tests.result }}" != "success" ]; then
+  #           FAIL_MSG+="\n📉 JMeter тесты показали деградацию или ошибки"
+  #         fi
+
+  #         if [ "${{ needs.lighthouse.result }}" != "success" ]; then
+  #           FAIL_MSG+="\n💡 Lighthouse CI показал проблемы с доступностью или производительностью"
+  #         fi
+
+  #         if [ -n "$FAIL_MSG" ]; then
+  #           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+  #             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+  #             -d text="🚨 CI пайплайн завершился с ошибками:$FAIL_MSG\n\n🔗 Подробнее: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+  #         else
+  #           echo "✅ Все проверки прошли успешно."
+  #         fi
