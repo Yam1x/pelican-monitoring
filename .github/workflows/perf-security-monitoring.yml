@@ -141,7 +141,7 @@ jobs:
           grep -Eo 'https://[^\"]+\.(js|css|png|jpg|jpeg|gif|webp|svg|woff2?)' page.html | sort -u > urls.txt
 
           echo "Validating Cache-Control headers..."
-          EXPECTED="Cache-Control: public, max-age=604800"
+          EXPECTED="Cache-Control: public, s-maxage=604800"
           EXITCODE=0
 
           while IFS= read -r url; do
