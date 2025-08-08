@@ -7,11 +7,13 @@ const xml2js = require('xml2js');
     console.error(`Файл не найден: ${filePath}`);
     process.exit(1);
   }
+
   const data = fs.readFileSync(filePath, 'utf8');
   if (data.trim() === '') {
     console.error(`Файл пуст: ${filePath}`);
     process.exit(1);
   }
+
   try {
     const result = await xml2js.parseStringPromise(data);
     const samples = result.testResults.httpSample || [];
@@ -19,6 +21,7 @@ const xml2js = require('xml2js');
       console.log('Образцы не найдены в файле результатов.');
       process.exit(0);
     }
+
     const responseTimes = samples.map(s => parseInt(s.$.t));
     const errorCount = samples.filter(s => s.$.s === 'false').length;
     const avg = Math.round(responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length);
@@ -26,15 +29,24 @@ const xml2js = require('xml2js');
     const sorted = [...responseTimes].sort((a, b) => a - b);
     const p95 = sorted[Math.floor(sorted.length * 0.95)];
     const p99 = sorted[Math.floor(sorted.length * 0.99)];
+
     console.log(`📊 Отчет метрик для Documents Page:`);
     console.log(`  Максимальное время ответа: ${max}ms`);
     console.log(`  Среднее время ответа: ${avg}ms`);
     console.log(`  95-й процентиль: ${p95}ms`);
     console.log(`  99-й процентиль: ${p99}ms`);
     console.log(`  Ошибочные запросы: ${errorCount}`);
-    if (max >= 1000) throw new Error(`❌ Максимальное время ответа слишком высокое: ${max}`);
-    if (avg >= 200) throw new Error(`❌ Среднее время ответа слишком высокое: ${avg}`);
-    if (errorCount !== 0) throw new Error(`❌ Найдены ошибки в запросах JMeter`);
+
+    const issues = [];
+    if (max >= 1000) issues.push(`❌ Максимальное время ответа слишком высокое: ${max}`);
+    if (avg >= 200) issues.push(`❌ Среднее время ответа слишком высокое: ${avg}`);
+    if (errorCount !== 0) issues.push(`❌ Найдены ошибки в запросах JMeter`);
+
+    if (issues.length > 0) {
+      console.error(issues.join('\n'));
+      process.exit(1);
+    }
+
   } catch (err) {
     console.error(`Ошибка обработки результатов: ${err.message}`);
     process.exit(1);
