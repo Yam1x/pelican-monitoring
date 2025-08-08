@@ -128,9 +128,46 @@ jobs:
       - name: Run Lighthouse CI - Desktop
         run: lhci autorun --config .lighthouserc.desktop.js
 
+  validate-cache-headers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Fetch and validate cache headers of static resources
+        run: |
+          echo "Fetching main page..."
+          curl -s https://chelzoo.ru > page.html
+
+          echo "Extracting static resources from HTML..."
+          grep -Eo 'https://[^\"]+\.(js|css|png|jpg|jpeg|gif|webp|svg|woff2?)' page.html | sort -u > urls.txt
+
+          echo "Validating Cache-Control headers..."
+          EXPECTED="Cache-Control: public, max-age=604800"
+          EXITCODE=0
+
+          while IFS= read -r url; do
+            echo "Checking $url"
+            HEADER=$(curl -s -I "$url" | grep -i '^Cache-Control:' | tr -d '\r')
+
+            if [[ "$HEADER" == "$EXPECTED" ]]; then
+              echo "✅ OK: $url"
+            else
+              echo "❌ BAD: $url"
+              echo "   Found:    $HEADER"
+              echo "   Expected: $EXPECTED"
+              EXITCODE=1
+            fi
+          done < urls.txt
+
+          if [[ $EXITCODE -ne 0 ]]; then
+            echo "❌ Some resources have incorrect cache headers."
+            exit 1
+          else
+            echo "✅ All resources have correct cache headers."
+          fi
+
   # notify:
   #   runs-on: ubuntu-24.04
-  #   needs: [validate-robots, jmeter-tests, lighthouse]
+  #   needs: [validate-robots, jmeter-tests, lighthouse, validate-cache-headers]
   #   if: always()
   #   steps:
   #     - name: Notify on failure
@@ -138,21 +175,26 @@ jobs:
   #         FAIL_MSG=""
 
   #         if [ "${{ needs.validate-robots.result }}" != "success" ]; then
-  #           FAIL_MSG+="\n❌ Проблема с robots.txt"
+  #           FAIL_MSG+="\n❌ Robots.txt not matches the right version. Check the pipeline and go to https://chelzoo.ru/robots.txt/"
   #         fi
 
   #         if [ "${{ needs.jmeter-tests.result }}" != "success" ]; then
-  #           FAIL_MSG+="\n📉 JMeter тесты показали деградацию или ошибки"
+  #           FAIL_MSG+="\n📉 JMeter tests are failed. Check the pipeline!"
   #         fi
 
   #         if [ "${{ needs.lighthouse.result }}" != "success" ]; then
-  #           FAIL_MSG+="\n💡 Lighthouse CI показал проблемы с доступностью или производительностью"
+  #           FAIL_MSG+="\n💡 Lighthouse CI found problems with chelzoo.ru performance or accessibility. Check the pipeline!"
   #         fi
+
+  #         if [ "${{ needs.validate-cache-headers.result }}" != "success" ]; then
+  #           FAIL_MSG+="\n🧩 There is a problem with Cache-control!"
+  #         fi
+
 
   #         if [ -n "$FAIL_MSG" ]; then
   #           curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
   #             -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
-  #             -d text="🚨 CI пайплайн завершился с ошибками:$FAIL_MSG\n\n🔗 Подробнее: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+  #             -d text="🚨 CI pipeline has failed with the following errors:$FAIL_MSG\n\n🔗 Подробнее: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
   #         else
-  #           echo "✅ Все проверки прошли успешно."
+  #           echo "✅ All checks were passed successfully."
   #         fi
