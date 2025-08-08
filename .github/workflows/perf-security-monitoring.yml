@@ -101,18 +101,18 @@ jobs:
           echo "✅ robots.txt matches expected content."
         continue-on-error: true
 
-      - name: Cache Lighthouse CI
+            - name: Cache Lighthouse CI
         id: cache-lhci
         uses: actions/cache@v4
         with:
           path: .lhci-cli
-          key: lhci-${{ runner.os }}-v0.12.2
+          key: lhci-${{ runner.os }}-v0.12.1
 
       - name: Install Lighthouse CI if not cached
         if: steps.cache-lhci.outputs.cache-hit != 'true'
         run: |
           mkdir -p .lhci-cli
-          npm install --prefix .lhci-cli @lhci/cli@0.12.2
+          npm install --prefix .lhci-cli @lhci/cli@0.12.1
 
       - name: Add Lighthouse CI to PATH
         run: echo "$PWD/.lhci-cli/node_modules/.bin" >> $GITHUB_PATH
@@ -120,7 +120,6 @@ jobs:
       - name: Run Lighthouse CI - Desktop
         run: lhci autorun --config .lighthouserc.desktop.js
         continue-on-error: true
-
 
       - name: Upload JMeter Results
         uses: actions/upload-artifact@v4
