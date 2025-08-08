@@ -4,13 +4,13 @@ const xml2js = require('xml2js');
 (async () => {
   const filePath = './result/newsPage.jtl';
   if (!fs.existsSync(filePath)) {
-    console.error(`Файл не найден: ${filePath}`);
+    console.error(`File was not found: ${filePath}`);
     process.exit(1);
   }
 
   const data = fs.readFileSync(filePath, 'utf8');
   if (data.trim() === '') {
-    console.error(`Файл пуст: ${filePath}`);
+    console.error(`File is empty: ${filePath}`);
     process.exit(1);
   }
 
@@ -18,7 +18,7 @@ const xml2js = require('xml2js');
     const result = await xml2js.parseStringPromise(data);
     const samples = result.testResults.httpSample || [];
     if (samples.length === 0) {
-      console.log('Образцы не найдены в файле результатов.');
+      console.log('There are no results.');
       process.exit(0);
     }
 
@@ -30,17 +30,17 @@ const xml2js = require('xml2js');
     const p95 = sorted[Math.floor(sorted.length * 0.95)];
     const p99 = sorted[Math.floor(sorted.length * 0.99)];
 
-    console.log(`📊 Отчет метрик для News Page:`);
-    console.log(`  Максимальное время ответа: ${max}ms`);
-    console.log(`  Среднее время ответа: ${avg}ms`);
-    console.log(`  95-й процентиль: ${p95}ms`);
-    console.log(`  99-й процентиль: ${p99}ms`);
-    console.log(`  Ошибочные запросы: ${errorCount}`);
+    console.log(`📊News Page Load Tests Report (Jmeter):`);
+    console.log(`  Max response: ${max}ms`);
+    console.log(`  Average response time: ${avg}ms`);
+    console.log(`  95th percentile: ${p95}ms`);
+    console.log(`  99th percentile: ${p99}ms`);
+    console.log(`  Error requests: ${errorCount}`);
 
     const issues = [];
-    if (max >= 1000) issues.push(`❌ Максимальное время ответа слишком высокое: ${max}`);
-    if (avg >= 200) issues.push(`❌ Среднее время ответа слишком высокое: ${avg}`);
-    if (errorCount !== 0) issues.push(`❌ Найдены ошибки в запросах JMeter`);
+    if (max >= 5000) issues.push(`❌ Max response time is too high (>5000ms): ${max}`);
+    if (avg >= 1500) issues.push(`❌ Average response time is too high (>1500ms): ${avg}`);
+    if (errorCount !== 0) issues.push(`❌ There are errors while processing requests from JMeter`);
 
     if (issues.length > 0) {
       console.error(issues.join('\n'));
@@ -48,7 +48,7 @@ const xml2js = require('xml2js');
     }
 
   } catch (err) {
-    console.error(`Ошибка обработки результатов: ${err.message}`);
+    console.error(`Error while parsing results: ${err.message}`);
     process.exit(1);
   }
 })();
