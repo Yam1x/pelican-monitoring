@@ -112,7 +112,7 @@ jobs:
         if: steps.cache-lhci.outputs.cache-hit != 'true'
         run: |
           mkdir -p .lhci-cli
-          npm install --prefix .lhci-cli @lhci/cli@0.12.1
+          npm install && npm install -g @lhci/cli@0.15.x
 
       - name: Add Lighthouse CI to PATH
         run: echo "$PWD/.lhci-cli/node_modules/.bin" >> $GITHUB_PATH
