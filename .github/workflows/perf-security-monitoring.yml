@@ -6,8 +6,8 @@ on:
       - feature/*
 
 jobs:
-  monitor:
-    runs-on: ubuntu-latest
+  performance-non-functional-tests:
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -74,14 +74,16 @@ jobs:
         continue-on-error: true
 
       - name: Parse JMeter result - News Page
+        id: parse_jmeter_news
         run: node tests/newsPage-jmeter-report.js
         continue-on-error: true
 
       - name: Validate robots.txt
+        id: robots_txt_validation
         run: |
           echo "Fetching robots.txt..."
           curl -sfL https://chelzoo.ru/robots.txt -o robots.txt
-          echo "Comparing content:"
+          echo "Reaging actual content..."
           cat <<EOF > expected_robots.txt
           # *
           User-agent: *
@@ -118,6 +120,7 @@ jobs:
         run: echo "$PWD/.lhci-cli/node_modules/.bin" >> $GITHUB_PATH
 
       - name: Run Lighthouse CI - Desktop
+        id: lighthouse_ci
         run: lhci autorun --config .lighthouserc.desktop.js
         continue-on-error: true
 
@@ -126,3 +129,24 @@ jobs:
         with:
           name: jmeter-result-files
           path: result/
+
+      # - name: Notify on Lighthouse CI failure
+      #   if: steps.lighthouse_ci.outcome == 'failure'
+      #   run: |
+      #     curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+      #     -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+      #     -d text="❌ Lighthouse CI step failed. Check the run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      # - name: Notify on JMeter Parse failure
+      #   if: steps.parse_jmeter_news.outcome == 'failure'
+      #   run: |
+      #     curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+      #     -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+      #     -d text="❌ JMeter News Page parsing failed. Check the run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+
+      # - name: Notify on robots.txt validation failure
+      #   if: steps.robots_txt_validation.outcome == 'failure'
+      #   run: |
+      #     curl -s -X POST https://api.telegram.org/bot${{ secrets.TELEGRAM_BOT_TOKEN }}/sendMessage \
+      #     -d chat_id=${{ secrets.TELEGRAM_CHAT_ID }} \
+      #     -d text="❌ robots.txt validation failed. Check the run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
