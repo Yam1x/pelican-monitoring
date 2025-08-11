@@ -68,14 +68,18 @@ jobs:
 
       - name: Run JMeter - Home Page
         run: |
+          rm -rf ./report/homePage
+          # run test -> run node parser (restores original "run and parse" behaviour)
           jmeter -n -t ./tests/homePageTest.jmx \
             -l ./result/homePage.jtl \
             -Jjmeter.save.saveservice.output_format=csv \
             -Jjmeter.save.saveservice.print_field_names=true \
             -Jjmeter.save.saveservice.response_data.on_error=true \
             -Jjmeter.save.saveservice.timestamp_format=ms \
+            && node tests/homePage-jmeter-report.js \
             || echo "JMETER_FAIL=1" >> $GITHUB_ENV
 
+          # try to generate HTML report if JTL exists (non-fatal; set REPORT_GEN_FAIL flag on failure)
           if [ -s ./result/homePage.jtl ]; then
             jmeter -g ./result/homePage.jtl -o ./report/homePage || echo "REPORT_GEN_FAIL_homePage=1" >> $GITHUB_ENV
           else
@@ -84,12 +88,14 @@ jobs:
 
       - name: Run JMeter - Documents Page
         run: |
+          rm -rf ./report/documentsPage
           jmeter -n -t ./tests/documentsPageTest.jmx \
             -l ./result/documentsPage.jtl \
             -Jjmeter.save.saveservice.output_format=csv \
             -Jjmeter.save.saveservice.print_field_names=true \
             -Jjmeter.save.saveservice.response_data.on_error=true \
             -Jjmeter.save.saveservice.timestamp_format=ms \
+            && node tests/documentsPage-jmeter-report.js \
             || echo "JMETER_FAIL=1" >> $GITHUB_ENV
 
           if [ -s ./result/documentsPage.jtl ]; then
@@ -100,12 +106,14 @@ jobs:
 
       - name: Run JMeter - News Page
         run: |
+          rm -rf ./report/newsPage
           jmeter -n -t ./tests/newsPageTest.jmx \
             -l ./result/newsPage.jtl \
             -Jjmeter.save.saveservice.output_format=csv \
             -Jjmeter.save.saveservice.print_field_names=true \
             -Jjmeter.save.saveservice.response_data.on_error=true \
             -Jjmeter.save.saveservice.timestamp_format=ms \
+            && node tests/newsPage-jmeter-report.js \
             || echo "JMETER_FAIL=1" >> $GITHUB_ENV
 
           if [ -s ./result/newsPage.jtl ]; then
@@ -131,9 +139,6 @@ jobs:
       - name: Fail if any JMeter test failed
         if: env.JMETER_FAIL == '1'
         run: exit 1
-
-
-
 
   lighthouse:
     runs-on: ubuntu-24.04
