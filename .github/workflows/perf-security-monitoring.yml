@@ -45,6 +45,14 @@ jobs:
         with:
           distribution: 'temurin'
           java-version: '17'
+          
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          
+      - name: Install dependencies
+        run: npm ci
 
       - name: Cache JMeter
         id: cache-jmeter
@@ -62,65 +70,79 @@ jobs:
       - name: Add JMeter to PATH
         run: echo "$PWD/apache-jmeter-5.6.3/bin" >> $GITHUB_PATH
 
-      - name: Create result directories
+      - name: Create report directories
         run: |
-          mkdir -p result report
+          mkdir -p ./report
+          mkdir -p ./result
 
       - name: Run JMeter - Home Page
         run: |
-          rm -rf ./report/homePage
-          # run test -> run node parser (restores original "run and parse" behaviour)
+          mkdir -p ./report/homePage
+          
           jmeter -n -t ./tests/homePageTest.jmx \
-            -l ./result/homePage.jtl \
-            -Jjmeter.save.saveservice.output_format=csv \
+            -l ./report/homePage/homePage.jtl \
+            -Jjmeter.save.saveservice.output_format=xml \
             -Jjmeter.save.saveservice.print_field_names=true \
             -Jjmeter.save.saveservice.response_data.on_error=true \
             -Jjmeter.save.saveservice.timestamp_format=ms \
-            && node tests/homePage-jmeter-report.js \
             || echo "JMETER_FAIL=1" >> $GITHUB_ENV
 
-          # try to generate HTML report if JTL exists (non-fatal; set REPORT_GEN_FAIL flag on failure)
-          if [ -s ./result/homePage.jtl ]; then
-            jmeter -g ./result/homePage.jtl -o ./report/homePage || echo "REPORT_GEN_FAIL_homePage=1" >> $GITHUB_ENV
+          cp ./report/homePage/homePage.jtl ./result/homePage.jtl
+
+          node tests/homePage-jmeter-report.js || echo "PARSER_FAILED=1" >> $GITHUB_ENV
+
+          if [ -s ./report/homePage/homePage.jtl ]; then
+            jmeter -g ./report/homePage/homePage.jtl -o ./report/homePage/html-report || echo "REPORT_GEN_FAIL_homePage=1" >> $GITHUB_ENV
           else
             echo "No JTL produced for homePage — skipping HTML generation"
           fi
 
       - name: Run JMeter - Documents Page
         run: |
-          rm -rf ./report/documentsPage
+          mkdir -p ./report/documentsPage
+          
           jmeter -n -t ./tests/documentsPageTest.jmx \
-            -l ./result/documentsPage.jtl \
-            -Jjmeter.save.saveservice.output_format=csv \
+            -l ./report/documentsPage/documentsPage.jtl \
+            -Jjmeter.save.saveservice.output_format=xml \
             -Jjmeter.save.saveservice.print_field_names=true \
             -Jjmeter.save.saveservice.response_data.on_error=true \
             -Jjmeter.save.saveservice.timestamp_format=ms \
-            && node tests/documentsPage-jmeter-report.js \
             || echo "JMETER_FAIL=1" >> $GITHUB_ENV
 
-          if [ -s ./result/documentsPage.jtl ]; then
-            jmeter -g ./result/documentsPage.jtl -o ./report/documentsPage || echo "REPORT_GEN_FAIL_documentsPage=1" >> $GITHUB_ENV
+          cp ./report/documentsPage/documentsPage.jtl ./result/documentsPage.jtl
+          node tests/documentsPage-jmeter-report.js || echo "PARSER_FAILED=1" >> $GITHUB_ENV
+
+          if [ -s ./report/documentsPage/documentsPage.jtl ]; then
+            jmeter -g ./report/documentsPage/documentsPage.jtl -o ./report/documentsPage/html-report || echo "REPORT_GEN_FAIL_documentsPage=1" >> $GITHUB_ENV
           else
             echo "No JTL produced for documentsPage — skipping HTML generation"
           fi
 
       - name: Run JMeter - News Page
         run: |
-          rm -rf ./report/newsPage
+          mkdir -p ./report/newsPage
+          
           jmeter -n -t ./tests/newsPageTest.jmx \
-            -l ./result/newsPage.jtl \
-            -Jjmeter.save.saveservice.output_format=csv \
+            -l ./report/newsPage/newsPage.jtl \
+            -Jjmeter.save.saveservice.output_format=xml \
             -Jjmeter.save.saveservice.print_field_names=true \
             -Jjmeter.save.saveservice.response_data.on_error=true \
             -Jjmeter.save.saveservice.timestamp_format=ms \
-            && node tests/newsPage-jmeter-report.js \
             || echo "JMETER_FAIL=1" >> $GITHUB_ENV
 
-          if [ -s ./result/newsPage.jtl ]; then
-            jmeter -g ./result/newsPage.jtl -o ./report/newsPage || echo "REPORT_GEN_FAIL_newsPage=1" >> $GITHUB_ENV
+          cp ./report/newsPage/newsPage.jtl ./result/newsPage.jtl
+          node tests/newsPage-jmeter-report.js || echo "PARSER_FAILED=1" >> $GITHUB_ENV
+
+          if [ -s ./report/newsPage/newsPage.jtl ]; then
+            jmeter -g ./report/newsPage/newsPage.jtl -o ./report/newsPage/html-report || echo "REPORT_GEN_FAIL_newsPage=1" >> $GITHUB_ENV
           else
             echo "No JTL produced for newsPage — skipping HTML generation"
           fi
+
+      - name: Verify report files
+        run: |
+          find ./report -type f | xargs ls -lh
+          find ./result -type f | xargs ls -lh
 
       - name: Upload JMeter Results (JTL)
         if: always()
@@ -129,15 +151,20 @@ jobs:
           name: jmeter-result-files
           path: result/
 
-      - name: Upload JMeter HTML Reports
+      - name: Upload Full JMeter Reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: jmeter-html-reports
+          name: jmeter-full-reports
           path: report/
+          retention-days: 7
 
       - name: Fail if any JMeter test failed
         if: env.JMETER_FAIL == '1'
+        run: exit 1
+
+      - name: Fail if any parser failed
+        if: env.PARSER_FAILED == '1'
         run: exit 1
 
   lighthouse:
