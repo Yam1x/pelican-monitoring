@@ -68,18 +68,51 @@ jobs:
 
       - name: Run JMeter - Home Page
         run: |
-          jmeter -n -t ./tests/homePageTest.jmx -l ./result/homePage.jtl -Jjmeter.save.saveservice.output_format=xml \
-          && jmeter -g ./result/homePage.jtl -o ./report/homePage || echo "JMETER_FAIL=1" >> $GITHUB_ENV
+          jmeter -n -t ./tests/homePageTest.jmx \
+            -l ./result/homePage.jtl \
+            -Jjmeter.save.saveservice.output_format=csv \
+            -Jjmeter.save.saveservice.print_field_names=true \
+            -Jjmeter.save.saveservice.response_data.on_error=true \
+            -Jjmeter.save.saveservice.timestamp_format=ms \
+            || echo "JMETER_FAIL=1" >> $GITHUB_ENV
+
+          if [ -s ./result/homePage.jtl ]; then
+            jmeter -g ./result/homePage.jtl -o ./report/homePage || echo "REPORT_GEN_FAIL_homePage=1" >> $GITHUB_ENV
+          else
+            echo "No JTL produced for homePage — skipping HTML generation"
+          fi
 
       - name: Run JMeter - Documents Page
         run: |
-          jmeter -n -t ./tests/documentsPageTest.jmx -l ./result/documentsPage.jtl -Jjmeter.save.saveservice.output_format=xml \
-          && jmeter -g ./result/documentsPage.jtl -o ./report/documentsPage || echo "JMETER_FAIL=1" >> $GITHUB_ENV
+          jmeter -n -t ./tests/documentsPageTest.jmx \
+            -l ./result/documentsPage.jtl \
+            -Jjmeter.save.saveservice.output_format=csv \
+            -Jjmeter.save.saveservice.print_field_names=true \
+            -Jjmeter.save.saveservice.response_data.on_error=true \
+            -Jjmeter.save.saveservice.timestamp_format=ms \
+            || echo "JMETER_FAIL=1" >> $GITHUB_ENV
+
+          if [ -s ./result/documentsPage.jtl ]; then
+            jmeter -g ./result/documentsPage.jtl -o ./report/documentsPage || echo "REPORT_GEN_FAIL_documentsPage=1" >> $GITHUB_ENV
+          else
+            echo "No JTL produced for documentsPage — skipping HTML generation"
+          fi
 
       - name: Run JMeter - News Page
         run: |
-          jmeter -n -t ./tests/newsPageTest.jmx -l ./result/newsPage.jtl -Jjmeter.save.saveservice.output_format=xml \
-          && jmeter -g ./result/newsPage.jtl -o ./report/newsPage || echo "JMETER_FAIL=1" >> $GITHUB_ENV
+          jmeter -n -t ./tests/newsPageTest.jmx \
+            -l ./result/newsPage.jtl \
+            -Jjmeter.save.saveservice.output_format=csv \
+            -Jjmeter.save.saveservice.print_field_names=true \
+            -Jjmeter.save.saveservice.response_data.on_error=true \
+            -Jjmeter.save.saveservice.timestamp_format=ms \
+            || echo "JMETER_FAIL=1" >> $GITHUB_ENV
+
+          if [ -s ./result/newsPage.jtl ]; then
+            jmeter -g ./result/newsPage.jtl -o ./report/newsPage || echo "REPORT_GEN_FAIL_newsPage=1" >> $GITHUB_ENV
+          else
+            echo "No JTL produced for newsPage — skipping HTML generation"
+          fi
 
       - name: Upload JMeter Results (JTL)
         if: always()
@@ -98,6 +131,7 @@ jobs:
       - name: Fail if any JMeter test failed
         if: env.JMETER_FAIL == '1'
         run: exit 1
+
 
 
 
