@@ -62,50 +62,43 @@ jobs:
       - name: Add JMeter to PATH
         run: echo "$PWD/apache-jmeter-5.6.3/bin" >> $GITHUB_PATH
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
+      - name: Create result directories
+        run: |
+          mkdir -p result report
 
-      - name: Cache node modules
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
-
-      - name: Install Node dependencies
-        run: npm ci
-
-      - name: Create result directory
-        run: mkdir -p result
-
-      - name: Run and parse JMeter - Home Page
+      - name: Run JMeter - Home Page
         run: |
           jmeter -n -t ./tests/homePageTest.jmx -l ./result/homePage.jtl -Jjmeter.save.saveservice.output_format=xml \
-            && node tests/homePage-jmeter-report.js || echo "JMETER_FAIL=1" >> $GITHUB_ENV
+          && jmeter -g ./result/homePage.jtl -o ./report/homePage || echo "JMETER_FAIL=1" >> $GITHUB_ENV
 
-      - name: Run and parse JMeter - Documents Page
+      - name: Run JMeter - Documents Page
         run: |
           jmeter -n -t ./tests/documentsPageTest.jmx -l ./result/documentsPage.jtl -Jjmeter.save.saveservice.output_format=xml \
-            && node tests/documentsPage-jmeter-report.js || echo "JMETER_FAIL=1" >> $GITHUB_ENV
+          && jmeter -g ./result/documentsPage.jtl -o ./report/documentsPage || echo "JMETER_FAIL=1" >> $GITHUB_ENV
 
-      - name: Run and parse JMeter - News Page
+      - name: Run JMeter - News Page
         run: |
           jmeter -n -t ./tests/newsPageTest.jmx -l ./result/newsPage.jtl -Jjmeter.save.saveservice.output_format=xml \
-            && node tests/newsPage-jmeter-report.js || echo "JMETER_FAIL=1" >> $GITHUB_ENV
+          && jmeter -g ./result/newsPage.jtl -o ./report/newsPage || echo "JMETER_FAIL=1" >> $GITHUB_ENV
 
-      - name: Upload JMeter Results
+      - name: Upload JMeter Results (JTL)
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: jmeter-result-files
           path: result/
 
+      - name: Upload JMeter HTML Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmeter-html-reports
+          path: report/
+
       - name: Fail if any JMeter test failed
         if: env.JMETER_FAIL == '1'
         run: exit 1
+
 
 
   lighthouse:
