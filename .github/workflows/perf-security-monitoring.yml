@@ -141,12 +141,17 @@ jobs:
           grep -Eo 'https://cdn\.chelzoo\.ru/[^\"\, ]+\.(svg|jpeg|jpg|png|gif|webp)' page.html | sort -u > urls.txt
 
           echo "Validating Cache-Control headers..."
-          EXPECTED="max-age=3600"
           EXITCODE=0
 
           while IFS= read -r url; do
             echo "Checking $url"
             HEADER=$(curl -s -I "$url" | grep -i '^Cache-Control:' | tr -d '\r')
+
+            if [[ "$url" == *" /_next/static/media/"* ]]; then
+              EXPECTED="max-age=31536000"
+            else
+              EXPECTED="max-age=3600"
+            fi
 
             if echo "$HEADER" | grep -iq "$EXPECTED"; then
               echo "✅PASSED: $url"
