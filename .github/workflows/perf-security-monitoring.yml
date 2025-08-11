@@ -35,77 +35,77 @@ jobs:
           echo "✅ robots.txt matches expected content."
 
   jmeter-tests:
-  runs-on: ubuntu-24.04
-  timeout-minutes: 5
-  steps:
-    - uses: actions/checkout@v4
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
 
-    - name: Set up Java
-      uses: actions/setup-java@v4
-      with:
-        distribution: 'temurin'
-        java-version: '17'
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
 
-    - name: Cache JMeter
-      id: cache-jmeter
-      uses: actions/cache@v4
-      with:
-        path: ./apache-jmeter-5.6.3
-        key: jmeter-${{ runner.os }}-v5.6.3
+      - name: Cache JMeter
+        id: cache-jmeter
+        uses: actions/cache@v4
+        with:
+          path: ./apache-jmeter-5.6.3
+          key: jmeter-${{ runner.os }}-v5.6.3
 
-    - name: Download JMeter if not cached
-      if: steps.cache-jmeter.outputs.cache-hit != 'true'
-      run: |
-        wget https://dlcdn.apache.org//jmeter/binaries/apache-jmeter-5.6.3.tgz
-        tar -xzf apache-jmeter-5.6.3.tgz
+      - name: Download JMeter if not cached
+        if: steps.cache-jmeter.outputs.cache-hit != 'true'
+        run: |
+          wget https://dlcdn.apache.org//jmeter/binaries/apache-jmeter-5.6.3.tgz
+          tar -xzf apache-jmeter-5.6.3.tgz
 
-    - name: Add JMeter to PATH
-      run: echo "$PWD/apache-jmeter-5.6.3/bin" >> $GITHUB_PATH
+      - name: Add JMeter to PATH
+        run: echo "$PWD/apache-jmeter-5.6.3/bin" >> $GITHUB_PATH
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: 20
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-    - name: Cache node modules
-      uses: actions/cache@v4
-      with:
-        path: ~/.npm
-        key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-npm-
+      - name: Cache node modules
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
 
-    - name: Install Node dependencies
-      run: npm ci
+      - name: Install Node dependencies
+        run: npm ci
 
-    - name: Create result directory
-      run: mkdir -p result
+      - name: Create result directory
+        run: mkdir -p result
 
-    - name: Run and parse JMeter - Home Page
-      run: |
-        jmeter -n -t ./tests/homePageTest.jmx -l ./result/homePage.jtl -Jjmeter.save.saveservice.output_format=xml \
-          && node tests/homePage-jmeter-report.js || echo "JMETER_FAIL=1" >> $GITHUB_ENV
+      - name: Run and parse JMeter - Home Page
+        run: |
+          jmeter -n -t ./tests/homePageTest.jmx -l ./result/homePage.jtl -Jjmeter.save.saveservice.output_format=xml \
+            && node tests/homePage-jmeter-report.js || echo "JMETER_FAIL=1" >> $GITHUB_ENV
 
-    - name: Run and parse JMeter - Documents Page
-      run: |
-        jmeter -n -t ./tests/documentsPageTest.jmx -l ./result/documentsPage.jtl -Jjmeter.save.saveservice.output_format=xml \
-          && node tests/documentsPage-jmeter-report.js || echo "JMETER_FAIL=1" >> $GITHUB_ENV
+      - name: Run and parse JMeter - Documents Page
+        run: |
+          jmeter -n -t ./tests/documentsPageTest.jmx -l ./result/documentsPage.jtl -Jjmeter.save.saveservice.output_format=xml \
+            && node tests/documentsPage-jmeter-report.js || echo "JMETER_FAIL=1" >> $GITHUB_ENV
 
-    - name: Run and parse JMeter - News Page
-      run: |
-        jmeter -n -t ./tests/newsPageTest.jmx -l ./result/newsPage.jtl -Jjmeter.save.saveservice.output_format=xml \
-          && node tests/newsPage-jmeter-report.js || echo "JMETER_FAIL=1" >> $GITHUB_ENV
+      - name: Run and parse JMeter - News Page
+        run: |
+          jmeter -n -t ./tests/newsPageTest.jmx -l ./result/newsPage.jtl -Jjmeter.save.saveservice.output_format=xml \
+            && node tests/newsPage-jmeter-report.js || echo "JMETER_FAIL=1" >> $GITHUB_ENV
 
-    - name: Upload JMeter Results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: jmeter-result-files
-        path: result/
+      - name: Upload JMeter Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmeter-result-files
+          path: result/
 
-    - name: Fail if any JMeter test failed
-      if: env.JMETER_FAIL == '1'
-      run: exit 1
+      - name: Fail if any JMeter test failed
+        if: env.JMETER_FAIL == '1'
+        run: exit 1
 
 
   lighthouse:
