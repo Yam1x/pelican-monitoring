@@ -341,36 +341,39 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
-      - name: Fetch and validate cache headers of CDN media resources
+      - name: Fetch and validate cache headers
         run: |
-          echo "Fetching main page..."
+          echo "Fetching main page and assets..."
           curl -s https://chelzoo.ru > page.html
+          curl -s https://chelzoo.ru/_next/static/chunks/main.js > main.js
+          
+          echo "Extracting ALL media URLs..."
+          grep -Eo '(https?:)?//(cdn\.chelzoo\.ru|storage\.yandexcloud\.net)[^\"\ ]+\.(svg|jpeg|jpg|png|gif|webp)' page.html main.js > urls.txt
+          grep -Eo '/_next/image\?url=[^\"\& ]+' page.html | sed 's|^|https://chelzoo.ru|' >> urls.txt
+          grep -Eo 'srcSet=[\"\'][^\"\']+[\"\']' page.html | grep -Eo 'https://[^\"\ ]+' >> urls.txt
 
-          echo "Extracting CDN media resources from HTML..."
-          grep -Eo 'https://cdn\.chelzoo\.ru/[^\"\ ]+\.(svg|jpeg|jpg|png|gif|webp)|https://chelzoo\.ru/_next/image\?url=[^\"\& ]+' page.html \
-            | sort -u > urls.txt
+          sed -i 's|%3A|:|g; s|%2F|/|g' urls.txt
+          sort -u urls.txt -o urls.txt
 
-          echo "Processing URLs..."
-          sed -i 's|https://chelzoo\.ru/_next/image?url=||g' urls.txt
-          sed -i 's|%3A|:|g; s|%2F|/|g' urls.txt  # Декодируем URL-encoded символы
+          echo "Found URLs:"
+          cat urls.txt
+          echo "----------------"
 
-          echo "Validating Cache-Control headers..."
           EXITCODE=0
-
           while IFS= read -r url; do
-            if [[ "$url" == https://cdn.chelzoo.ru/_next/static/media/* ]]; then
+            if [[ "$url" == *"/_next/image?url="* ]]; then
+              CHECK_URL="$url"
+              EXPECTED="max-age=3600"
+            elif [[ "$url" == *"/_next/static/media/"* ]]; then
               CHECK_URL="$url"
               EXPECTED="max-age=31536000"
-            elif [[ "$url" == https://storage.yandexcloud.net* ]]; then
-              CHECK_URL="https://cdn.chelzoo.ru/_next/image?url=${url//:/%3A//%2F}"
-              EXPECTED="max-age=3600"
             else
               CHECK_URL="$url"
               EXPECTED="max-age=3600"
             fi
 
             echo "Checking $CHECK_URL"
-            HEADER=$(curl -s -I "$CHECK_URL" | grep -i '^Cache-Control:' | tr -d '\r')
+            HEADER=$(curl -s -I "$CHECK_URL" | grep -i '^Cache-Control:' | tr -d '\r' || echo "NO HEADER")
 
             if echo "$HEADER" | grep -iq "$EXPECTED"; then
               echo "✅PASSED: $CHECK_URL"
