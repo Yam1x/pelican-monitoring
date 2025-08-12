@@ -339,66 +339,49 @@ jobs:
 
   validate-cache-headers:
     runs-on: ubuntu-24.04
-    timeout-minutes: 3
+    timeout-minutes: 2
     steps:
-      - name: Setup and fetch
+      - name: Fetch and validate cache headers of CDN media resources
         run: |
-          echo "Installing dependencies..."
-          npm install -g puppeteer
-          
-          echo "Fetching page with browser..."
-          node << 'EOF'
-          const puppeteer = require('puppeteer');
-          
-          (async () => {
-            const browser = await puppeteer.launch();
-            const page = await browser.newPage();
-            
-            const requests = [];
-            page.on('request', request => {
-              if (request.url().match(/\.(png|jpg|jpeg|svg|webp)(\?|$)/i)) {
-                requests.push(request.url());
-              }
-            });
-            
-            await page.goto('https://chelzoo.ru', {waitUntil: 'networkidle2'});
-            await browser.close();
-            
-            const uniqueUrls = [...new Set(requests)];
-            require('fs').writeFileSync('urls.txt', uniqueUrls.join('\n'));
-          })();
-          EOF
+          echo "Fetching main page..."
+          curl -s https://chelzoo.ru > page.html
 
-      - name: Validate cache headers
-        run: |
-          echo "Processing URLs..."
-          grep -E 'cdn\.chelzoo\.ru|storage\.yandexcloud\.net' urls.txt > filtered_urls.txt
-          
-          echo "Found media URLs:"
-          cat filtered_urls.txt
-          echo "----------------"
-          
+          echo "Extracting CDN media resources from HTML..."
+          grep -Eo 'https://(cdn\.chelzoo\.ru|chelzoo\.ru)/[^" ,]+\.(svg|jpeg|jpg|png|gif|webp)|https://(cdn\.chelzoo\.ru|chelzoo\.ru)/_next/image\?url=[^" ,]+' page.html \
+            | sort -u > urls.txt
+
+          echo "Validating Cache-Control headers..."
           EXITCODE=0
+
           while IFS= read -r url; do
+            echo "Checking $url"
+            HEADER=$(curl -s -I "$url" | grep -i '^Cache-Control:' | tr -d '\r')
+
             if [[ "$url" == *"/_next/static/media/"* ]]; then
               EXPECTED="max-age=31536000"
-            elif [[ "$url" == *"/_next/image"* ]]; then
+            elif [[ "$url" == *"image?url=https%3A%2F%2Fcdn.chelzoo.ru%2F_next%2Fstatic%2Fmedia"* ]]; then
+              EXPECTED="max-age=31536000"
+            elif [[ "$url" == *"image?url=https%3A%2F%2Fstorage.yandexcloud.net"* ]]; then
               EXPECTED="max-age=3600"
             else
               EXPECTED="max-age=3600"
             fi
-            
-            echo "Checking $url"
-            HEADER=$(curl -s -I "$url" | grep -i 'cache-control:' | tr -d '\r' || echo "NO HEADER")
-            
+
             if echo "$HEADER" | grep -iq "$EXPECTED"; then
-              echo "✅PASSED: $url (Found: $HEADER)"
+              echo "✅PASSED: $url"
             else
               echo "❌FAILED: $url"
               echo "   Found:    $HEADER"
-              echo "   Expected: $EXPECTED"
+              echo "   Expected to contain: $EXPECTED"
               EXITCODE=1
             fi
-          done < filtered_urls.txt
-          
-          exit $EXITCODE
+          done < urls.txt
+
+          rm -f page.html urls.txt
+
+          if [[ $EXITCODE -ne 0 ]]; then
+            echo "Some resources have incorrect cache headers."
+            exit 1
+          else
+            echo "All resources have correct cache headers."
+          fi
