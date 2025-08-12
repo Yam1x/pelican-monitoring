@@ -339,26 +339,38 @@ jobs:
 
   validate-cache-headers:
     runs-on: ubuntu-24.04
-    timeout-minutes: 3
+    timeout-minutes: 5
     steps:
-      - name: Fetch and validate all image URLs
+      - name: Setup and fetch images
         run: |
-          echo "Installing dependencies..."
+          # Устанавливаем Node.js и npm (если еще не установлены)
+          echo "Установка Node.js и npm..."
           curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
           sudo apt-get install -y nodejs
-          sudo npm install -g puppeteer
+          
+          # Создаем локальный проект для Puppeteer
+          echo "Создаем временный проект для Puppeteer..."
+          mkdir puppeteer-temp
+          cd puppeteer-temp
+          npm init -y
+          npm install puppeteer
 
-          echo "Creating script to collect URL..."
+          # Создаем скрипт для сбора URL
+          echo "Создаем скрипт для сбора URL изображений..."
           cat > scrape_images.js << 'EOF'
           const puppeteer = require('puppeteer');
           const fs = require('fs');
 
           (async () => {
-            const browser = await puppeteer.launch();
+            const browser = await puppeteer.launch({
+              headless: true,
+              args: ['--no-sandbox', '--disable-setuid-sandbox']
+            });
+            
             const page = await browser.newPage();
-
             const imageUrls = new Set();
 
+            // Перехватываем все запросы к изображениям
             page.on('response', async (response) => {
               const url = response.url();
               if (url.match(/\.(png|jpg|jpeg|svg|webp|gif)(\?|$)/i)) {
@@ -366,37 +378,41 @@ jobs:
               }
             });
 
+            // Открываем страницу
             await page.goto('https://chelzoo.ru', {
               waitUntil: 'networkidle2',
-              timeout: 60000
+              timeout: 30000
             });
 
-            const imgElements = await page.$$eval('img, [style*="background-image"]', (elements) => {
-              return elements.map(el => {
-                if (el.tagName === 'IMG') {
-                  return el.src;
-                } else {
-                  const style = window.getComputedStyle(el);
-                  const match = style.backgroundImage.match(/url\(["']?(.*?)["']?\)/);
-                  return match ? match[1] : null;
-                }
-              }).filter(Boolean);
-            });
+            // Дополнительно ищем в атрибутах
+            const elements = await page.$$('img, [style*="background-image"]');
+            for (const el of elements) {
+              const src = await el.evaluate(node => {
+                if (node.tagName === 'IMG') return node.src;
+                const style = window.getComputedStyle(node);
+                const match = style.backgroundImage.match(/url\(["']?(.*?)["']?\)/);
+                return match ? match[1] : null;
+              });
+              if (src) imageUrls.add(src);
+            }
 
-            imgElements.forEach(url => imageUrls.add(url));
-
-            fs.writeFileSync('image_urls.txt', Array.from(imageUrls).join('\n'));
+            // Сохраняем URL
+            fs.writeFileSync('../image_urls.txt', Array.from(imageUrls).join('\n'));
             await browser.close();
           })();
           EOF
 
-          echo "Launching browser to collect URLs of images..."
+          # Запускаем скрипт
+          echo "Запускаем сбор URL..."
           node scrape_images.js
+          cd ..
 
-          echo "Filtration of URL..."
+          # Фильтруем URL
+          echo "Фильтруем URL..."
           grep -E 'cdn\.chelzoo\.ru|storage\.yandexcloud\.net' image_urls.txt > filtered_urls.txt
 
-          echo "Checking headers Cache-Control..."
+          # Проверяем заголовки
+          echo "Проверяем заголовки Cache-Control..."
           EXITCODE=0
           while IFS= read -r url; do
             if [[ "$url" == *"/_next/static/media/"* ]]; then
@@ -405,9 +421,6 @@ jobs:
             elif [[ "$url" == *"/_next/image"* && "$url" == *"storage.yandexcloud.net"* ]]; then
               EXPECTED="max-age=3600"
               TYPE="Dynamic Image (Yandex)"
-            elif [[ "$url" == *"/_next/image"* ]]; then
-              EXPECTED="max-age=3600"
-              TYPE="Dynamic Image"
             else
               EXPECTED="max-age=3600"
               TYPE="Other Resource"
@@ -426,10 +439,4 @@ jobs:
             fi
           done < filtered_urls.txt
 
-          # Завершаем с соответствующим кодом
-          if [ $EXITCODE -ne 0 ]; then
-            echo "Some resources have incorrect cache control headers!"
-            exit 1
-          else
-            echo "All of the resources have incorrect cache control headers!"
-          fi
+          exit $EXITCODE
