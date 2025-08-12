@@ -19,7 +19,7 @@
       </ThreadGroup>
       <hashTree>
         <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP Request">
-          <stringProp name="HTTPSampler.domain">small.chelzoo.tech</stringProp>
+          <stringProp name="HTTPSampler.domain">chelzoo.ru</stringProp>
           <stringProp name="HTTPSampler.path">/documents/uchreditelnye-dokumenty-i-rekvizity?year=2025</stringProp>
           <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
           <stringProp name="HTTPSampler.method">GET</stringProp>
