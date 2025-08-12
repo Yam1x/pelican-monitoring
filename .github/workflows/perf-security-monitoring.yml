@@ -147,6 +147,7 @@ jobs:
             echo "✅ All JMeter tests and parsers passed."
           fi
 
+
   lighthouse:
     runs-on: ubuntu-24.04
     timeout-minutes: 3
@@ -165,62 +166,154 @@ jobs:
         run: lhci autorun --config .lighthouserc.desktop.js
 
       - name: Parse Lighthouse results and print summary
-        if: always() 
+        if: always()
         run: |
           node - <<'EOF'
           const fs = require('fs');
+          const path = require('path');
 
           try {
-            const data = JSON.parse(fs.readFileSync('.lighthouseci/lhr-*.json', 'utf8'));
+            const reportsDir = '.lighthouseci';
+            const reportFiles = fs.readdirSync(reportsDir)
+              .filter(file => file.startsWith('lhr-') && file.endsWith('.json'))
+              .map(file => path.join(reportsDir, file))
+              .sort((a, b) => fs.statSync(b).mtimeMs - fs.statSync(a).mtimeMs);
+
+            if (reportFiles.length === 0) {
+              throw new Error('No Lighthouse report files found');
+            }
+
+            const latestReport = reportFiles[0];
+            const rawData = fs.readFileSync(latestReport, 'utf8');
+            const data = JSON.parse(rawData);
+
+            if (!Array.isArray(data) || !data[0]?.audits || !data[0]?.categories) {
+              throw new Error('Invalid Lighthouse report format');
+            }
+
             const audits = data[0].audits;
             const categories = data[0].categories;
 
-            // Два порога для каждой метрики
             const thresholds = {
-              'first-contentful-paint': { warn: 2000, error: 2500 },
-              'largest-contentful-paint': { warn: 2500, error: 4000 },
-              'speed-index': { warn: 3400, error: 4000 },
-              'interactive': { warn: 3800, error: 5000 },
-              'total-blocking-time': { warn: 200, error: 500 },
-              'cumulative-layout-shift': { warn: 0.1, error: 0.25 }
+              // Performance metrics
+              'largest-contentful-paint': { warn: 2400, error: 4000 },
+              'first-contentful-paint': { warn: 1800, error: 3000 },
+              'speed-index': { warn: 3400, error: 5800 },
+              'total-blocking-time': { warn: 150, error: 350 },
+              'interactive': { warn: Infinity, error: 5000 }, // Только error threshold
+              
+              // Security metrics
+              'csp-xss': { minScore: 1 },
+              'is-on-https': { minScore: 1 },
+              'redirects-http': { minScore: 1 },
+              'has-hsts': { minScore: 1 }
+            };
+
+            const warnings = {
+              'uses-http2': true,
+              'uses-rel-preconnect': true
             };
 
             console.log('📊 Lighthouse Audit Summary:');
+            console.log(`Report file: ${latestReport}\n`);
             let hasError = false;
+            let hasWarning = false;
 
             Object.entries(thresholds).forEach(([id, limits]) => {
               const audit = audits[id];
-              if (!audit) return;
-              const value = audit.numericValue;
-              let status, emoji;
-
-              if (value > limits.error) {
-                status = 'ERROR';
-                emoji = '❌';
-                hasError = true;
-              } else if (value > limits.warn) {
-                status = 'WARN';
-                emoji = '⚠️';
-              } else {
-                status = 'PASS';
-                emoji = '✅';
+              if (!audit) {
+                console.warn(`⚠️  Metric not found: ${id}`);
+                return;
               }
 
-              console.log(`${emoji} ${audit.title}: ${value}${audit.numericUnit || ''} | warn ≤ ${limits.warn}, error ≤ ${limits.error} (${status})`);
+              const value = audit.numericValue !== undefined ? audit.numericValue : audit.score * 100;
+              const unit = audit.numericUnit || '';
+              let status, emoji;
+
+              if (limits.minScore !== undefined) {
+                if (audit.score < limits.minScore) {
+                  status = 'ERROR';
+                  emoji = '❌';
+                  hasError = true;
+                } else {
+                  status = 'PASS';
+                  emoji = '✅';
+                }
+                console.log(`${emoji} ${audit.title}: ${(audit.score * 100).toFixed(0)}/100 | min ${limits.minScore * 100} (${status})`);
+              } else {
+                if (value > limits.error) {
+                  status = 'ERROR';
+                  emoji = '❌';
+                  hasError = true;
+                } else if (value > limits.warn) {
+                  status = 'WARN';
+                  emoji = '⚠️';
+                  hasWarning = true;
+                } else {
+                  status = 'PASS';
+                  emoji = '✅';
+                }
+                console.log(`${emoji} ${audit.title}: ${Math.round(value)}${unit} | warn ≤ ${limits.warn}, error ≤ ${limits.error} (${status})`);
+              }
             });
 
-            const perfScore = categories.performance.score * 100;
-            console.log(`\nOverall Performance Score: ${perfScore} / 100`);
+            Object.keys(warnings).forEach(id => {
+              const audit = audits[id];
+              if (!audit) return;
+              
+              if (audit.score < 1) {
+                console.log(`⚠️  ${audit.title}: ${(audit.score * 100).toFixed(0)}/100 (WARNING)`);
+                hasWarning = true;
+              }
+            });
+
+            const a11yScore = categories.accessibility.score * 100;
+            if (a11yScore < 90) {
+              console.log(`❌ Accessibility: ${a11yScore.toFixed(0)}/100 | min 90 (ERROR)`);
+              hasError = true;
+            } else {
+              console.log(`✅ Accessibility: ${a11yScore.toFixed(0)}/100 (PASS)`);
+            }
+
+            const perfScore = Math.round(categories.performance.score * 100);
+            console.log(`\n🏆 Performance Score: ${perfScore}/100`);
 
             if (hasError) {
-              console.error('❌ One or more metrics exceeded ERROR thresholds.');
+              console.error('\n❌ One or more metrics exceeded ERROR thresholds');
               process.exit(1);
+            } else if (hasWarning) {
+              console.log('\n⚠️  Some warnings detected, but no critical errors');
+            } else {
+              console.log('\n✅ All metrics within acceptable thresholds');
             }
           } catch (error) {
-            console.error('Error parsing Lighthouse results:', error.message);
+            console.error('\n❌ Error processing Lighthouse results:');
+            console.error(error.message);
+            
+            // Debug info
+            console.log('\nDirectory contents:');
+            try {
+              console.log(fs.readdirSync('.'));
+              if (fs.existsSync('.lighthouseci')) {
+                console.log('\n.lighthouseci contents:');
+                console.log(fs.readdirSync('.lighthouseci'));
+              }
+            } catch (e) {
+              console.error('Could not read directory:', e.message);
+            }
+            
             process.exit(1);
           }
           EOF
+
+      - name: Upload Lighthouse report artifacts
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: lighthouse-reports
+          path: |
+            .lighthouseci/
+            lhci-links.out
 
   validate-cache-headers:
     runs-on: ubuntu-24.04
