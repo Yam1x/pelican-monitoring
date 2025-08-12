@@ -343,20 +343,17 @@ jobs:
     steps:
       - name: Setup and fetch images
         run: |
-          # Устанавливаем Node.js и npm (если еще не установлены)
-          echo "Установка Node.js и npm..."
+          echo "Installing Node.js and npm..."
           curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
           sudo apt-get install -y nodejs
           
-          # Создаем локальный проект для Puppeteer
-          echo "Создаем временный проект для Puppeteer..."
+          echo "Creating temporary project for Puppeteer..."
           mkdir puppeteer-temp
           cd puppeteer-temp
           npm init -y
           npm install puppeteer
 
-          # Создаем скрипт для сбора URL
-          echo "Создаем скрипт для сбора URL изображений..."
+          echo "Creating script for collecting URL..."
           cat > scrape_images.js << 'EOF'
           const puppeteer = require('puppeteer');
           const fs = require('fs');
@@ -370,7 +367,6 @@ jobs:
             const page = await browser.newPage();
             const imageUrls = new Set();
 
-            // Перехватываем все запросы к изображениям
             page.on('response', async (response) => {
               const url = response.url();
               if (url.match(/\.(png|jpg|jpeg|svg|webp|gif)(\?|$)/i)) {
@@ -378,13 +374,11 @@ jobs:
               }
             });
 
-            // Открываем страницу
             await page.goto('https://chelzoo.ru', {
               waitUntil: 'networkidle2',
               timeout: 30000
             });
 
-            // Дополнительно ищем в атрибутах
             const elements = await page.$$('img, [style*="background-image"]');
             for (const el of elements) {
               const src = await el.evaluate(node => {
@@ -396,31 +390,34 @@ jobs:
               if (src) imageUrls.add(src);
             }
 
-            // Сохраняем URL
             fs.writeFileSync('../image_urls.txt', Array.from(imageUrls).join('\n'));
             await browser.close();
           })();
           EOF
 
-          # Запускаем скрипт
-          echo "Запускаем сбор URL..."
+          echo "Launching collecting of the URL..."
           node scrape_images.js
           cd ..
 
-          # Фильтруем URL
-          echo "Фильтруем URL..."
+          echo "Filtering URL..."
           grep -E 'cdn\.chelzoo\.ru|storage\.yandexcloud\.net' image_urls.txt > filtered_urls.txt
 
-          # Проверяем заголовки
-          echo "Проверяем заголовки Cache-Control..."
+          echo "Checking headers Cache-Control..."
           EXITCODE=0
           while IFS= read -r url; do
-            if [[ "$url" == *"/_next/static/media/"* ]]; then
+            decoded_url=$(printf '%b' "${url//%/\\x}")
+
+            if [[ "$url" == *"/_next/static/media/"* ]] || 
+              [[ "$decoded_url" == *"/_next/static/media/"* ]] || 
+              [[ "$url" == *"/_next/image?url="* && "$decoded_url" == *"/_next/static/media/"* ]]; then
               EXPECTED="max-age=31536000"
               TYPE="Static Media"
             elif [[ "$url" == *"/_next/image"* && "$url" == *"storage.yandexcloud.net"* ]]; then
               EXPECTED="max-age=3600"
               TYPE="Dynamic Image (Yandex)"
+            elif [[ "$url" == *"/_next/image"* && "$url" == *"cdn.chelzoo.ru/_next/static/media"* ]]; then
+              EXPECTED="max-age=31536000"
+              TYPE="Static Media (via Image Optimizer)"
             else
               EXPECTED="max-age=3600"
               TYPE="Other Resource"
@@ -438,5 +435,11 @@ jobs:
               EXITCODE=1
             fi
           done < filtered_urls.txt
+
+          # Additional logging
+          echo "=== Statistics ==="
+          echo "Quantity of URL: $(wc -l < image_urls.txt)"
+          echo "Checked URL: $(wc -l < filtered_urls.txt)"
+          echo "Errors: $EXITCODE"
 
           exit $EXITCODE
