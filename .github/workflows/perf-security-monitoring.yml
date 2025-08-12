@@ -74,98 +74,78 @@ jobs:
         run: |
           mkdir -p ./report
           mkdir -p ./result
+          mkdir -p ./errors
 
       - name: Run JMeter - Home Page
         run: |
           mkdir -p ./report/homePage
-          
-          jmeter -n -t ./tests/homePageTest.jmx \
+          if ! jmeter -n -t ./tests/homePageTest.jmx \
             -l ./report/homePage/homePage.jtl \
             -Jjmeter.save.saveservice.output_format=xml \
             -Jjmeter.save.saveservice.print_field_names=true \
             -Jjmeter.save.saveservice.response_data.on_error=true \
-            -Jjmeter.save.saveservice.timestamp_format=ms \
-            || echo "JMETER_FAIL=1" >> $GITHUB_ENV
+            -Jjmeter.save.saveservice.timestamp_format=ms; then
+            echo "JMETER_FAIL_homePage=1" >> $GITHUB_ENV
+            echo "❌ JMeter test failed: Home Page" >> ./errors/summary.txt
+          fi
 
-          cp ./report/homePage/homePage.jtl ./result/homePage.jtl
+          cp ./report/homePage/homePage.jtl ./result/homePage.jtl || true
 
-          node tests/homePage-jmeter-report.js || echo "PARSER_FAILED=1" >> $GITHUB_ENV
-
-          if [ -s ./report/homePage/homePage.jtl ]; then
-            jmeter -g ./report/homePage/homePage.jtl -o ./report/homePage/html-report || echo "REPORT_GEN_FAIL_homePage=1" >> $GITHUB_ENV
-          else
-            echo "No JTL produced for homePage — skipping HTML generation"
+          if ! node tests/homePage-jmeter-report.js; then
+            echo "PARSER_FAIL_homePage=1" >> $GITHUB_ENV
+            echo "❌ Parser failed: Home Page" >> ./errors/summary.txt
           fi
 
       - name: Run JMeter - Documents Page
         run: |
           mkdir -p ./report/documentsPage
-          
-          jmeter -n -t ./tests/documentsPageTest.jmx \
+          if ! jmeter -n -t ./tests/documentsPageTest.jmx \
             -l ./report/documentsPage/documentsPage.jtl \
             -Jjmeter.save.saveservice.output_format=xml \
             -Jjmeter.save.saveservice.print_field_names=true \
             -Jjmeter.save.saveservice.response_data.on_error=true \
-            -Jjmeter.save.saveservice.timestamp_format=ms \
-            || echo "JMETER_FAIL=1" >> $GITHUB_ENV
+            -Jjmeter.save.saveservice.timestamp_format=ms; then
+            echo "JMETER_FAIL_documentsPage=1" >> $GITHUB_ENV
+            echo "❌ JMeter test failed: Documents Page" >> ./errors/summary.txt
+          fi
 
-          cp ./report/documentsPage/documentsPage.jtl ./result/documentsPage.jtl
-          node tests/documentsPage-jmeter-report.js || echo "PARSER_FAILED=1" >> $GITHUB_ENV
+          cp ./report/documentsPage/documentsPage.jtl ./result/documentsPage.jtl || true
 
-          if [ -s ./report/documentsPage/documentsPage.jtl ]; then
-            jmeter -g ./report/documentsPage/documentsPage.jtl -o ./report/documentsPage/html-report || echo "REPORT_GEN_FAIL_documentsPage=1" >> $GITHUB_ENV
-          else
-            echo "No JTL produced for documentsPage — skipping HTML generation"
+          if ! node tests/documentsPage-jmeter-report.js; then
+            echo "PARSER_FAIL_documentsPage=1" >> $GITHUB_ENV
+            echo "❌ Parser failed: Documents Page" >> ./errors/summary.txt
           fi
 
       - name: Run JMeter - News Page
         run: |
           mkdir -p ./report/newsPage
-          
-          jmeter -n -t ./tests/newsPageTest.jmx \
+          if ! jmeter -n -t ./tests/newsPageTest.jmx \
             -l ./report/newsPage/newsPage.jtl \
             -Jjmeter.save.saveservice.output_format=xml \
             -Jjmeter.save.saveservice.print_field_names=true \
             -Jjmeter.save.saveservice.response_data.on_error=true \
-            -Jjmeter.save.saveservice.timestamp_format=ms \
-            || echo "JMETER_FAIL=1" >> $GITHUB_ENV
-
-          cp ./report/newsPage/newsPage.jtl ./result/newsPage.jtl
-          node tests/newsPage-jmeter-report.js || echo "PARSER_FAILED=1" >> $GITHUB_ENV
-
-          if [ -s ./report/newsPage/newsPage.jtl ]; then
-            jmeter -g ./report/newsPage/newsPage.jtl -o ./report/newsPage/html-report || echo "REPORT_GEN_FAIL_newsPage=1" >> $GITHUB_ENV
-          else
-            echo "No JTL produced for newsPage — skipping HTML generation"
+            -Jjmeter.save.saveservice.timestamp_format=ms; then
+            echo "JMETER_FAIL_newsPage=1" >> $GITHUB_ENV
+            echo "❌ JMeter test failed: News Page" >> ./errors/summary.txt
           fi
 
-      - name: Verify report files
+          cp ./report/newsPage/newsPage.jtl ./result/newsPage.jtl || true
+
+          if ! node tests/newsPage-jmeter-report.js; then
+            echo "PARSER_FAIL_newsPage=1" >> $GITHUB_ENV
+            echo "❌ Parser failed: News Page" >> ./errors/summary.txt
+          fi
+
+      - name: Final validation & summary
         run: |
-          find ./report -type f | xargs ls -lh
-          find ./result -type f | xargs ls -lh
-
-      - name: Upload JMeter Results (JTL)
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: jmeter-result-files
-          path: result/
-
-      - name: Upload Full JMeter Reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: jmeter-full-reports
-          path: report/
-          retention-days: 7
-
-      - name: Fail if any JMeter test failed
-        if: env.JMETER_FAIL == '1'
-        run: exit 1
-
-      - name: Fail if any parser failed
-        if: env.PARSER_FAILED == '1'
-        run: exit 1
+          echo "===== TEST SUMMARY ====="
+          if [ -f ./errors/summary.txt ]; then
+            cat ./errors/summary.txt
+            echo "========================"
+            exit 1
+          else
+            echo "✅ All JMeter tests and parsers passed."
+          fi
 
   lighthouse:
     runs-on: ubuntu-24.04
@@ -178,20 +158,69 @@ jobs:
         with:
           node-version: 20
 
-      # - name: Cache node modules
-      #   uses: actions/cache@v4
-      #   with:
-      #     path: ~/.npm
-      #     key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-
-      # - name: Install Node dependencies
-      #   run: npm ci
-
       - name: Install Lighthouse CI
         run: npm install -g @lhci/cli@0.15.x
 
       - name: Run Lighthouse CI - Desktop
         run: lhci autorun --config .lighthouserc.desktop.js
+
+      - name: Parse Lighthouse results and print summary
+        if: always() 
+        run: |
+          node - <<'EOF'
+          const fs = require('fs');
+
+          try {
+            const data = JSON.parse(fs.readFileSync('.lighthouseci/lhr-*.json', 'utf8'));
+            const audits = data[0].audits;
+            const categories = data[0].categories;
+
+            // Два порога для каждой метрики
+            const thresholds = {
+              'first-contentful-paint': { warn: 2000, error: 2500 },
+              'largest-contentful-paint': { warn: 2500, error: 4000 },
+              'speed-index': { warn: 3400, error: 4000 },
+              'interactive': { warn: 3800, error: 5000 },
+              'total-blocking-time': { warn: 200, error: 500 },
+              'cumulative-layout-shift': { warn: 0.1, error: 0.25 }
+            };
+
+            console.log('📊 Lighthouse Audit Summary:');
+            let hasError = false;
+
+            Object.entries(thresholds).forEach(([id, limits]) => {
+              const audit = audits[id];
+              if (!audit) return;
+              const value = audit.numericValue;
+              let status, emoji;
+
+              if (value > limits.error) {
+                status = 'ERROR';
+                emoji = '❌';
+                hasError = true;
+              } else if (value > limits.warn) {
+                status = 'WARN';
+                emoji = '⚠️';
+              } else {
+                status = 'PASS';
+                emoji = '✅';
+              }
+
+              console.log(`${emoji} ${audit.title}: ${value}${audit.numericUnit || ''} | warn ≤ ${limits.warn}, error ≤ ${limits.error} (${status})`);
+            });
+
+            const perfScore = categories.performance.score * 100;
+            console.log(`\nOverall Performance Score: ${perfScore} / 100`);
+
+            if (hasError) {
+              console.error('❌ One or more metrics exceeded ERROR thresholds.');
+              process.exit(1);
+            }
+          } catch (error) {
+            console.error('Error parsing Lighthouse results:', error.message);
+            process.exit(1);
+          }
+          EOF
 
   validate-cache-headers:
     runs-on: ubuntu-24.04
