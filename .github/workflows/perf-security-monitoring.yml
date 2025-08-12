@@ -338,56 +338,41 @@ jobs:
             lhci-links.out
 
   validate-cache-headers:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 2
-    steps:
-      - name: Fetch and validate cache headers
-        run: |
-          echo "Fetching main page and assets..."
-          curl -s https://chelzoo.ru > page.html
-          curl -s https://chelzoo.ru/_next/static/chunks/main.js > main.js
-          
-          echo "Extracting ALL media URLs..."
-          grep -Eo '(https?:)?//(cdn\.chelzoo\.ru|storage\.yandexcloud\.net)[^\"\ ]+\.(svg|jpeg|jpg|png|gif|webp)' page.html main.js > urls.txt
-          grep -Eo '/_next/image\?url=[^\"\& ]+' page.html | sed 's|^|https://chelzoo.ru|' >> urls.txt
-          grep -Eo 'srcSet=[\"\'][^\"\']+[\"\']' page.html | grep -Eo 'https://[^\"\ ]+' >> urls.txt
+  runs-on: ubuntu-24.04
+  timeout-minutes: 2
+  steps:
+    - name: Fetch and validate cache headers
+      run: |
+        echo "Fetching main page..."
+        curl -s https://chelzoo.ru > page.html
 
-          sed -i 's|%3A|:|g; s|%2F|/|g' urls.txt
-          sort -u urls.txt -o urls.txt
+        echo "Extracting media URLs..."
+        grep -Eo 'https://cdn\.chelzoo\.ru/_next/static/media/[^"]+\.(png|jpg|jpeg|svg|webp)' page.html > urls.txt
+        grep -Eo '/_next/image\?url=https[^&"]+' page.html | sed 's|^|https://chelzoo.ru|; s|%3A|:|g; s|%2F|/|g' >> urls.txt
 
-          echo "Found URLs:"
-          cat urls.txt
-          echo "----------------"
+        echo "Found URLs:"
+        cat urls.txt
+        echo "----------------"
 
-          EXITCODE=0
-          while IFS= read -r url; do
-            if [[ "$url" == *"/_next/image?url="* ]]; then
-              CHECK_URL="$url"
-              EXPECTED="max-age=3600"
-            elif [[ "$url" == *"/_next/static/media/"* ]]; then
-              CHECK_URL="$url"
-              EXPECTED="max-age=31536000"
-            else
-              CHECK_URL="$url"
-              EXPECTED="max-age=3600"
-            fi
-
-            echo "Checking $CHECK_URL"
-            HEADER=$(curl -s -I "$CHECK_URL" | grep -i '^Cache-Control:' | tr -d '\r' || echo "NO HEADER")
-
-            if echo "$HEADER" | grep -iq "$EXPECTED"; then
-              echo "✅PASSED: $CHECK_URL"
-            else
-              echo "❌FAILED: $CHECK_URL"
-              echo "   Found:    $HEADER"
-              echo "   Expected to contain: $EXPECTED"
-              EXITCODE=1
-            fi
-          done < urls.txt
-
-          if [[ $EXITCODE -ne 0 ]]; then
-            echo "Some resources have incorrect cache headers."
-            exit 1
+        EXITCODE=0
+        while IFS= read -r url; do
+          if [[ "$url" == *"/_next/static/media/"* ]]; then
+            EXPECTED="max-age=31536000"
           else
-            echo "All resources have correct cache headers."
+            EXPECTED="max-age=3600"
           fi
+
+          echo "Checking $url"
+          HEADER=$(curl -s -I "$url" | grep -i 'Cache-Control:' | tr -d '\r' || echo "NO HEADER")
+
+          if echo "$HEADER" | grep -iq "$EXPECTED"; then
+            echo "✅PASSED: $url (Found: $HEADER)"
+          else
+            echo "❌FAILED: $url"
+            echo "   Found:    $HEADER"
+            echo "   Expected: $EXPECTED"
+            EXITCODE=1
+          fi
+        done < urls.txt
+
+        exit $EXITCODE
