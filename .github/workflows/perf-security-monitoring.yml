@@ -347,15 +347,21 @@ jobs:
           curl -s https://chelzoo.ru > page.html
 
           echo "Extracting CDN media resources from HTML..."
-          grep -Eo 'https://(cdn\.chelzoo\.ru|chelzoo\.ru)/[^" ,]+\.(svg|jpeg|jpg|png|gif|webp)|https://(cdn\.chelzoo\.ru|chelzoo\.ru)/_next/image\?url=[^" ,]+' page.html \
+          grep -Eo [](https://(cdn\.chelzoo\.ru|chelzoo\.ru))?/[^" ,]+\.(svg|jpeg|jpg|png|gif|webp)[](https://(cdn\.chelzoo\.ru|chelzoo\.ru))?/_next/image\?url=[^" ,]+' page.html \
             | sort -u > urls.txt
 
           echo "Validating Cache-Control headers..."
           EXITCODE=0
 
           while IFS= read -r url; do
-            echo "Checking $url"
-            HEADER=$(curl -s -I "$url" | grep -i '^Cache-Control:' | tr -d '\r')
+            if [[ "$url" == http* ]]; then
+              full_url="$url"
+            else
+              full_url="https://cdn.chelzoo.ru$url"
+            fi
+
+            echo "Checking $full_url"
+            HEADER=$(curl -s -I "$full_url" | grep -i '^Cache-Control:' | tr -d '\r')
 
             if [[ "$url" == *"/_next/static/media/"* ]]; then
               EXPECTED="max-age=31536000"
@@ -368,9 +374,9 @@ jobs:
             fi
 
             if echo "$HEADER" | grep -iq "$EXPECTED"; then
-              echo "✅PASSED: $url"
+              echo "✅PASSED: $full_url"
             else
-              echo "❌FAILED: $url"
+              echo "❌FAILED: $full_url"
               echo "   Found:    $HEADER"
               echo "   Expected to contain: $EXPECTED"
               EXITCODE=1
