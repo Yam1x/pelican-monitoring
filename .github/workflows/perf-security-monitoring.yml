@@ -339,56 +339,97 @@ jobs:
 
   validate-cache-headers:
     runs-on: ubuntu-24.04
-    timeout-minutes: 2
+    timeout-minutes: 3
     steps:
-      - name: Fetch and validate cache headers of CDN media resources
+      - name: Fetch and validate all image URLs
         run: |
-          echo "Fetching main page..."
-          curl -s https://chelzoo.ru > page.html
+          echo "Installing dependencies..."
+          curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+          sudo apt-get install -y nodejs
+          sudo npm install -g puppeteer
 
-          echo "Extracting CDN media resources from HTML..."
-          PATTERN=[](https://(cdn\\.chelzoo\\.ru|chelzoo\\.ru))?/[^ \" ,]+\\.(svg|jpeg|jpg|png|gif|webp)[](https://(cdn\\.chelzoo\\.ru|chelzoo\\.ru))?/_next/image\\?url=[^& \" ,]+&w=[^& \" ,]+&q=[^& \" ,]+"
-          grep -Eo "$PATTERN" page.html \
-            | sort -u > urls.txt
+          echo "Creating script to collect URL..."
+          cat > scrape_images.js << 'EOF'
+          const puppeteer = require('puppeteer');
+          const fs = require('fs');
 
-          echo "Validating Cache-Control headers..."
+          (async () => {
+            const browser = await puppeteer.launch();
+            const page = await browser.newPage();
+
+            const imageUrls = new Set();
+
+            page.on('response', async (response) => {
+              const url = response.url();
+              if (url.match(/\.(png|jpg|jpeg|svg|webp|gif)(\?|$)/i)) {
+                imageUrls.add(url);
+              }
+            });
+
+            await page.goto('https://chelzoo.ru', {
+              waitUntil: 'networkidle2',
+              timeout: 60000
+            });
+
+            const imgElements = await page.$$eval('img, [style*="background-image"]', (elements) => {
+              return elements.map(el => {
+                if (el.tagName === 'IMG') {
+                  return el.src;
+                } else {
+                  const style = window.getComputedStyle(el);
+                  const match = style.backgroundImage.match(/url\(["']?(.*?)["']?\)/);
+                  return match ? match[1] : null;
+                }
+              }).filter(Boolean);
+            });
+
+            imgElements.forEach(url => imageUrls.add(url));
+
+            fs.writeFileSync('image_urls.txt', Array.from(imageUrls).join('\n'));
+            await browser.close();
+          })();
+          EOF
+
+          echo "Launching browser to collect URLs of images..."
+          node scrape_images.js
+
+          echo "Filtration of URL..."
+          grep -E 'cdn\.chelzoo\.ru|storage\.yandexcloud\.net' image_urls.txt > filtered_urls.txt
+
+          echo "Checking headers Cache-Control..."
           EXITCODE=0
-
           while IFS= read -r url; do
-            if [[ "$url" == http* ]]; then
-              full_url="$url"
-            else
-              full_url="https://cdn.chelzoo.ru$url"
-            fi
-
-            echo "Checking $full_url"
-            HEADER=$(curl -s -I "$full_url" | grep -i '^Cache-Control:' | tr -d '\r')
-
             if [[ "$url" == *"/_next/static/media/"* ]]; then
               EXPECTED="max-age=31536000"
-            elif [[ "$url" == *"image?url=https%3A%2F%2Fcdn.chelzoo.ru%2F_next%2Fstatic%2Fmedia"* ]]; then
-              EXPECTED="max-age=31536000"
-            elif [[ "$url" == *"image?url=https%3A%2F%2Fstorage.yandexcloud.net"* ]]; then
+              TYPE="Static Media"
+            elif [[ "$url" == *"/_next/image"* && "$url" == *"storage.yandexcloud.net"* ]]; then
               EXPECTED="max-age=3600"
+              TYPE="Dynamic Image (Yandex)"
+            elif [[ "$url" == *"/_next/image"* ]]; then
+              EXPECTED="max-age=3600"
+              TYPE="Dynamic Image"
             else
               EXPECTED="max-age=3600"
+              TYPE="Other Resource"
             fi
+
+            echo -n "Checking $TYPE: $url ... "
+            HEADER=$(curl -s -I "$url" | grep -i 'cache-control:' | tr -d '\r' || echo "NO HEADER")
 
             if echo "$HEADER" | grep -iq "$EXPECTED"; then
-              echo "✅PASSED: $full_url"
+              echo "✅ PASSED (Found: $HEADER)"
             else
-              echo "❌FAILED: $full_url"
+              echo "❌ FAILED"
+              echo "   Expected: $EXPECTED"
               echo "   Found:    $HEADER"
-              echo "   Expected to contain: $EXPECTED"
               EXITCODE=1
             fi
-          done < urls.txt
+          done < filtered_urls.txt
 
-          rm -f page.html urls.txt
-
-          if [[ $EXITCODE -ne 0 ]]; then
-            echo "Some resources have incorrect cache headers."
+          # Завершаем с соответствующим кодом
+          if [ $EXITCODE -ne 0 ]; then
+            echo "Some resources have incorrect cache control headers!"
             exit 1
           else
-            echo "All resources have correct cache headers."
+            echo "All of the resources have incorrect cache control headers!"
           fi
