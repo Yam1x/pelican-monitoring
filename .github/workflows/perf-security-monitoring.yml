@@ -338,41 +338,41 @@ jobs:
             lhci-links.out
 
   validate-cache-headers:
-  runs-on: ubuntu-24.04
-  timeout-minutes: 2
-  steps:
-    - name: Fetch and validate cache headers
-      run: |
-        echo "Fetching main page..."
-        curl -s https://chelzoo.ru > page.html
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Fetch and validate cache headers
+        run: |
+          echo "Fetching main page..."
+          curl -s https://chelzoo.ru > page.html
 
-        echo "Extracting media URLs..."
-        grep -Eo 'https://cdn\.chelzoo\.ru/_next/static/media/[^"]+\.(png|jpg|jpeg|svg|webp)' page.html > urls.txt
-        grep -Eo '/_next/image\?url=https[^&"]+' page.html | sed 's|^|https://chelzoo.ru|; s|%3A|:|g; s|%2F|/|g' >> urls.txt
+          echo "Extracting media URLs..."
+          grep -Eo 'https://cdn\.chelzoo\.ru/_next/static/media/[^"]+\.(png|jpg|jpeg|svg|webp)' page.html > urls.txt
+          grep -Eo '/_next/image\?url=https[^&"]+' page.html | sed 's|^|https://chelzoo.ru|; s|%3A|:|g; s|%2F|/|g' >> urls.txt
 
-        echo "Found URLs:"
-        cat urls.txt
-        echo "----------------"
+          echo "Found URLs:"
+          cat urls.txt
+          echo "----------------"
 
-        EXITCODE=0
-        while IFS= read -r url; do
-          if [[ "$url" == *"/_next/static/media/"* ]]; then
-            EXPECTED="max-age=31536000"
-          else
-            EXPECTED="max-age=3600"
-          fi
+          EXITCODE=0
+          while IFS= read -r url; do
+            if [[ "$url" == *"/_next/static/media/"* ]]; then
+              EXPECTED="max-age=31536000"
+            else
+              EXPECTED="max-age=3600"
+            fi
 
-          echo "Checking $url"
-          HEADER=$(curl -s -I "$url" | grep -i 'Cache-Control:' | tr -d '\r' || echo "NO HEADER")
+            echo "Checking $url"
+            HEADER=$(curl -s -I "$url" | grep -i 'Cache-Control:' | tr -d '\r' || echo "NO HEADER")
 
-          if echo "$HEADER" | grep -iq "$EXPECTED"; then
-            echo "✅PASSED: $url (Found: $HEADER)"
-          else
-            echo "❌FAILED: $url"
-            echo "   Found:    $HEADER"
-            echo "   Expected: $EXPECTED"
-            EXITCODE=1
-          fi
-        done < urls.txt
+            if echo "$HEADER" | grep -iq "$EXPECTED"; then
+              echo "✅PASSED: $url (Found: $HEADER)"
+            else
+              echo "❌FAILED: $url"
+              echo "   Found:    $HEADER"
+              echo "   Expected: $EXPECTED"
+              EXITCODE=1
+            fi
+          done < urls.txt
 
-        exit $EXITCODE
+          exit $EXITCODE
