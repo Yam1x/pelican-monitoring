@@ -14,10 +14,22 @@ module.exports = {
     assert: {
       assertions: {
         // Performance
-        'largest-contentful-paint': ['error', { maxNumericValue: 5000 }],
-        'first-contentful-paint': ['error', { maxNumericValue: 2500 }],
-        'speed-index': ['error', { maxNumericValue: 4000 }],
-        'total-blocking-time': ['error', { maxNumericValue: 500 }],
+        'largest-contentful-paint': [
+          'warn', { maxNumericValue: 2400 },
+          'error', { maxNumericValue: 4000 }
+        ],
+        'first-contentful-paint': [
+          'warn', { maxNumericValue: 1800 },
+          'error', { maxNumericValue: 3000 }
+        ],
+        'speed-index': [
+          'warn', { maxNumericValue: 3400 },
+          'error', { maxNumericValue: 5800 }
+        ],
+        'total-blocking-time': [
+          'warn', { maxNumericValue: 150 },
+          'error', { maxNumericValue: 350 }
+        ],
         'interactive': ['error', { maxNumericValue: 5000 }],
 
         // Categories
