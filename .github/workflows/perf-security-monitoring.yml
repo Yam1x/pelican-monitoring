@@ -347,7 +347,7 @@ jobs:
           curl -s https://chelzoo.ru > page.html
 
           echo "Extracting CDN media resources from HTML..."
-          PATTERN=[](https://(cdn\.chelzoo\.ru|chelzoo\.ru))?/[^" ,]+\.(svg|jpeg|jpg|png|gif|webp)[](https://(cdn\.chelzoo\.ru|chelzoo\.ru))?/_next/image\?url=[^" ,]+'
+          PATTERN=[](https://(cdn\\.chelzoo\\.ru|chelzoo\\.ru))?/[^ \" ,]+\\.(svg|jpeg|jpg|png|gif|webp)[](https://(cdn\\.chelzoo\\.ru|chelzoo\\.ru))?/_next/image\\?url=[^& \" ,]+&w=[^& \" ,]+&q=[^& \" ,]+"
           grep -Eo "$PATTERN" page.html \
             | sort -u > urls.txt
 
