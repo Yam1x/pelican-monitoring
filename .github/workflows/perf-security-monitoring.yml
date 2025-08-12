@@ -339,32 +339,58 @@ jobs:
 
   validate-cache-headers:
     runs-on: ubuntu-24.04
-    timeout-minutes: 2
+    timeout-minutes: 3
     steps:
-      - name: Fetch and validate cache headers
+      - name: Setup and fetch
         run: |
-          echo "Fetching main page..."
-          curl -s https://chelzoo.ru > page.html
+          echo "Installing dependencies..."
+          npm install -g puppeteer
+          
+          echo "Fetching page with browser..."
+          node << 'EOF'
+          const puppeteer = require('puppeteer');
+          
+          (async () => {
+            const browser = await puppeteer.launch();
+            const page = await browser.newPage();
+            
+            const requests = [];
+            page.on('request', request => {
+              if (request.url().match(/\.(png|jpg|jpeg|svg|webp)(\?|$)/i)) {
+                requests.push(request.url());
+              }
+            });
+            
+            await page.goto('https://chelzoo.ru', {waitUntil: 'networkidle2'});
+            await browser.close();
+            
+            const uniqueUrls = [...new Set(requests)];
+            require('fs').writeFileSync('urls.txt', uniqueUrls.join('\n'));
+          })();
+          EOF
 
-          echo "Extracting media URLs..."
-          grep -Eo 'https://cdn\.chelzoo\.ru/_next/static/media/[^"]+\.(png|jpg|jpeg|svg|webp)' page.html > urls.txt
-          grep -Eo '/_next/image\?url=https[^&"]+' page.html | sed 's|^|https://chelzoo.ru|; s|%3A|:|g; s|%2F|/|g' >> urls.txt
-
-          echo "Found URLs:"
-          cat urls.txt
+      - name: Validate cache headers
+        run: |
+          echo "Processing URLs..."
+          grep -E 'cdn\.chelzoo\.ru|storage\.yandexcloud\.net' urls.txt > filtered_urls.txt
+          
+          echo "Found media URLs:"
+          cat filtered_urls.txt
           echo "----------------"
-
+          
           EXITCODE=0
           while IFS= read -r url; do
             if [[ "$url" == *"/_next/static/media/"* ]]; then
               EXPECTED="max-age=31536000"
+            elif [[ "$url" == *"/_next/image"* ]]; then
+              EXPECTED="max-age=3600"
             else
               EXPECTED="max-age=3600"
             fi
-
+            
             echo "Checking $url"
-            HEADER=$(curl -s -I "$url" | grep -i 'Cache-Control:' | tr -d '\r' || echo "NO HEADER")
-
+            HEADER=$(curl -s -I "$url" | grep -i 'cache-control:' | tr -d '\r' || echo "NO HEADER")
+            
             if echo "$HEADER" | grep -iq "$EXPECTED"; then
               echo "✅PASSED: $url (Found: $HEADER)"
             else
@@ -373,6 +399,6 @@ jobs:
               echo "   Expected: $EXPECTED"
               EXITCODE=1
             fi
-          done < urls.txt
-
+          done < filtered_urls.txt
+          
           exit $EXITCODE
