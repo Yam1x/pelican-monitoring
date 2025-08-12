@@ -337,58 +337,58 @@ jobs:
             .lighthouseci/
             lhci-links.out
 
-validate-cache-headers:
-  runs-on: ubuntu-24.04
-  timeout-minutes: 2
-  steps:
-    - name: Fetch and validate cache headers of CDN media resources
-      run: |
-        echo "Fetching main page..."
-        curl -s https://chelzoo.ru > page.html
+  validate-cache-headers:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - name: Fetch and validate cache headers of CDN media resources
+        run: |
+          echo "Fetching main page..."
+          curl -s https://chelzoo.ru > page.html
 
-        echo "Extracting CDN media resources from HTML..."
-        PATTERN=[](https://(cdn\.chelzoo\.ru|chelzoo\.ru))?/[^" ,]+\.(svg|jpeg|jpg|png|gif|webp)[](https://(cdn\.chelzoo\.ru|chelzoo\.ru))?/_next/image\?url=[^" ,]+'
-        grep -Eo "$PATTERN" page.html \
-          | sort -u > urls.txt
+          echo "Extracting CDN media resources from HTML..."
+          PATTERN=[](https://(cdn\.chelzoo\.ru|chelzoo\.ru))?/[^" ,]+\.(svg|jpeg|jpg|png|gif|webp)[](https://(cdn\.chelzoo\.ru|chelzoo\.ru))?/_next/image\?url=[^" ,]+'
+          grep -Eo "$PATTERN" page.html \
+            | sort -u > urls.txt
 
-        echo "Validating Cache-Control headers..."
-        EXITCODE=0
+          echo "Validating Cache-Control headers..."
+          EXITCODE=0
 
-        while IFS= read -r url; do
-          if [[ "$url" == http* ]]; then
-            full_url="$url"
+          while IFS= read -r url; do
+            if [[ "$url" == http* ]]; then
+              full_url="$url"
+            else
+              full_url="https://cdn.chelzoo.ru$url"
+            fi
+
+            echo "Checking $full_url"
+            HEADER=$(curl -s -I "$full_url" | grep -i '^Cache-Control:' | tr -d '\r')
+
+            if [[ "$url" == *"/_next/static/media/"* ]]; then
+              EXPECTED="max-age=31536000"
+            elif [[ "$url" == *"image?url=https%3A%2F%2Fcdn.chelzoo.ru%2F_next%2Fstatic%2Fmedia"* ]]; then
+              EXPECTED="max-age=31536000"
+            elif [[ "$url" == *"image?url=https%3A%2F%2Fstorage.yandexcloud.net"* ]]; then
+              EXPECTED="max-age=3600"
+            else
+              EXPECTED="max-age=3600"
+            fi
+
+            if echo "$HEADER" | grep -iq "$EXPECTED"; then
+              echo "✅PASSED: $full_url"
+            else
+              echo "❌FAILED: $full_url"
+              echo "   Found:    $HEADER"
+              echo "   Expected to contain: $EXPECTED"
+              EXITCODE=1
+            fi
+          done < urls.txt
+
+          rm -f page.html urls.txt
+
+          if [[ $EXITCODE -ne 0 ]]; then
+            echo "Some resources have incorrect cache headers."
+            exit 1
           else
-            full_url="https://cdn.chelzoo.ru$url"
+            echo "All resources have correct cache headers."
           fi
-
-          echo "Checking $full_url"
-          HEADER=$(curl -s -I "$full_url" | grep -i '^Cache-Control:' | tr -d '\r')
-
-          if [[ "$url" == *"/_next/static/media/"* ]]; then
-            EXPECTED="max-age=31536000"
-          elif [[ "$url" == *"image?url=https%3A%2F%2Fcdn.chelzoo.ru%2F_next%2Fstatic%2Fmedia"* ]]; then
-            EXPECTED="max-age=31536000"
-          elif [[ "$url" == *"image?url=https%3A%2F%2Fstorage.yandexcloud.net"* ]]; then
-            EXPECTED="max-age=3600"
-          else
-            EXPECTED="max-age=3600"
-          fi
-
-          if echo "$HEADER" | grep -iq "$EXPECTED"; then
-            echo "✅PASSED: $full_url"
-          else
-            echo "❌FAILED: $full_url"
-            echo "   Found:    $HEADER"
-            echo "   Expected to contain: $EXPECTED"
-            EXITCODE=1
-          fi
-        done < urls.txt
-
-        rm -f page.html urls.txt
-
-        if [[ $EXITCODE -ne 0 ]]; then
-          echo "Some resources have incorrect cache headers."
-          exit 1
-        else
-          echo "All resources have correct cache headers."
-        fi
