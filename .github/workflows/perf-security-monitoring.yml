@@ -147,7 +147,6 @@ jobs:
             echo "✅ All JMeter tests and parsers passed."
           fi
 
-
   lighthouse:
     runs-on: ubuntu-24.04
     timeout-minutes: 3
@@ -165,168 +164,9 @@ jobs:
       - name: Run Lighthouse CI - Desktop
         run: lhci autorun --config .lighthouserc.desktop.js
 
-      - name: Parse Lighthouse results and print summary
+      - name: Validate Lighthouse results
         if: always()
-        run: |
-          node - <<'EOF'
-          const fs = require('fs');
-          const path = require('path');
-
-          try {
-            const reportsDir = '.lighthouseci';
-            const reportFile = fs.readdirSync(reportsDir)
-              .find(file => file.startsWith('lhr-') && file.endsWith('.json'));
-            
-            if (!reportFile) {
-              throw new Error('No Lighthouse JSON report found in .lighthouseci directory');
-            }
-
-            const reportPath = path.join(reportsDir, reportFile);
-            console.log(`Found report: ${reportPath}`);
-
-            const rawData = fs.readFileSync(reportPath, 'utf8');
-            const report = JSON.parse(rawData);
-
-            if (!report.audits || !report.categories) {
-              if (Array.isArray(report) && report[0]?.audits) {
-                console.log('Using legacy report format (array)');
-                processReport(report[0]);
-              } else {
-                throw new Error('Invalid Lighthouse report format - missing required fields');
-              }
-            } else {
-              console.log('Using new report format (object)');
-              processReport(report);
-            }
-
-            function processReport(data) {
-              const audits = data.audits;
-              const categories = data.categories;
-
-              // Performance metrics
-              const performanceThresholds = {
-                'first-contentful-paint': { warn: 1800, error: 3000 },
-                'largest-contentful-paint': { warn: 2400, error: 4000 },
-                'speed-index': { warn: 3400, error: 5800 },
-                'total-blocking-time': { warn: 150, error: 350 },
-                'interactive': { warn: Infinity, error: 5000 }
-              };
-
-              // Security metrics
-              const securityThresholds = {
-                'csp-xss': { minScore: 1 },
-                'is-on-https': { minScore: 1 },
-                'redirects-http': { minScore: 1 },
-                'has-hsts': { minScore: 1 }
-              };
-
-              // Warning metrics (only show if score < 1)
-              const warningMetrics = {
-                'uses-http2': 'Uses HTTP/2',
-                'uses-rel-preconnect': 'Uses rel=preconnect'
-              };
-
-              console.log('\n📊 Lighthouse Audit Summary:');
-              let hasError = false;
-              let hasWarning = false;
-
-              // Check performance metrics
-              console.log('\n🚀 Performance Metrics:');
-              Object.entries(performanceThresholds).forEach(([id, limits]) => {
-                const audit = audits[id];
-                if (!audit) {
-                  console.warn(`⚠️  Audit not found: ${id}`);
-                  return;
-                }
-
-                const value = audit.numericValue;
-                const unit = audit.numericUnit || '';
-                let status, emoji;
-
-                if (value > limits.error) {
-                  status = 'ERROR';
-                  emoji = '❌';
-                  hasError = true;
-                } else if (value > limits.warn) {
-                  status = 'WARN';
-                  emoji = '⚠️';
-                  hasWarning = true;
-                } else {
-                  status = 'PASS';
-                  emoji = '✅';
-                }
-
-                console.log(`${emoji} ${audit.title}: ${Math.round(value)}${unit} | warn ≤ ${limits.warn}, error ≤ ${limits.error} (${status})`);
-              });
-
-              // Check security metrics
-              console.log('\n🔒 Security Metrics:');
-              Object.entries(securityThresholds).forEach(([id, limits]) => {
-                const audit = audits[id];
-                if (!audit) {
-                  console.warn(`⚠️  Audit not found: ${id}`);
-                  return;
-                }
-
-                const score = audit.score * 100;
-                let status, emoji;
-
-                if (score < limits.minScore * 100) {
-                  status = 'ERROR';
-                  emoji = '❌';
-                  hasError = true;
-                } else {
-                  status = 'PASS';
-                  emoji = '✅';
-                }
-
-                console.log(`${emoji} ${audit.title}: ${Math.round(score)}/100 | min ${limits.minScore * 100} (${status})`);
-              });
-
-              // Check warning metrics
-              console.log('\nℹ️  Additional Checks:');
-              Object.entries(warningMetrics).forEach(([id, title]) => {
-                const audit = audits[id];
-                if (!audit) return;
-
-                const score = audit.score * 100;
-                if (score < 100) {
-                  console.log(`⚠️  ${title}: ${Math.round(score)}/100 (WARNING)`);
-                  hasWarning = true;
-                } else {
-                  console.log(`✅ ${title}: ${Math.round(score)}/100 (PASS)`);
-                }
-              });
-
-              // Check categories
-              console.log('\n🏆 Category Scores:');
-              const perfScore = Math.round((categories.performance?.score || 0) * 100);
-              console.log(`🚀 Performance: ${perfScore}/100`);
-
-              const a11yScore = Math.round((categories.accessibility?.score || 0) * 100);
-              if (a11yScore < 90) {
-                console.log(`❌ Accessibility: ${a11yScore}/100 | min 90 (ERROR)`);
-                hasError = true;
-              } else {
-                console.log(`✅ Accessibility: ${a11yScore}/100 (PASS)`);
-              }
-
-              // Final summary
-              if (hasError) {
-                console.error('\n❌ One or more metrics exceeded ERROR thresholds');
-                process.exit(1);
-              } else if (hasWarning) {
-                console.log('\n⚠️  Some warnings detected, but no critical errors');
-              } else {
-                console.log('\n✅ All metrics within acceptable thresholds');
-              }
-            }
-          } catch (error) {
-            console.error('\n❌ Error processing Lighthouse results:');
-            console.error(error.stack);
-            process.exit(1);
-          }
-          EOF
+        run: node scripts/validate-lighthouse.js
 
       - name: Upload Lighthouse report artifacts
         if: always()
@@ -338,108 +178,28 @@ jobs:
             lhci-links.out
 
   validate-cache-headers:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 5
-    steps:
-      - name: Setup and fetch images
-        run: |
-          echo "Installing Node.js and npm..."
-          curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-          sudo apt-get install -y nodejs
-          
-          echo "Creating temporary project for Puppeteer..."
-          mkdir puppeteer-temp
-          cd puppeteer-temp
-          npm init -y
-          npm install puppeteer
-
-          echo "Creating script for collecting URL..."
-          cat > scrape_images.js << 'EOF'
-          const puppeteer = require('puppeteer');
-          const fs = require('fs');
-
-          (async () => {
-            const browser = await puppeteer.launch({
-              headless: true,
-              args: ['--no-sandbox', '--disable-setuid-sandbox']
-            });
-            
-            const page = await browser.newPage();
-            const imageUrls = new Set();
-
-            page.on('response', async (response) => {
-              const url = response.url();
-              if (url.match(/\.(png|jpg|jpeg|svg|webp|gif)(\?|$)/i)) {
-                imageUrls.add(url);
-              }
-            });
-
-            await page.goto('https://chelzoo.ru', {
-              waitUntil: 'networkidle2',
-              timeout: 30000
-            });
-
-            const elements = await page.$$('img, [style*="background-image"]');
-            for (const el of elements) {
-              const src = await el.evaluate(node => {
-                if (node.tagName === 'IMG') return node.src;
-                const style = window.getComputedStyle(node);
-                const match = style.backgroundImage.match(/url\(["']?(.*?)["']?\)/);
-                return match ? match[1] : null;
-              });
-              if (src) imageUrls.add(src);
-            }
-
-            fs.writeFileSync('../image_urls.txt', Array.from(imageUrls).join('\n'));
-            await browser.close();
-          })();
-          EOF
-
-          echo "Launching collecting of the URL..."
-          node scrape_images.js
-          cd ..
-
-          echo "Filtering URL..."
-          grep -E 'cdn\.chelzoo\.ru|storage\.yandexcloud\.net' image_urls.txt > filtered_urls.txt
-
-          echo "Checking headers Cache-Control..."
-          EXITCODE=0
-          while IFS= read -r url; do
-            decoded_url=$(printf '%b' "${url//%/\\x}")
-
-            if [[ "$url" == *"/_next/static/media/"* ]] || 
-              [[ "$decoded_url" == *"/_next/static/media/"* ]] || 
-              [[ "$url" == *"/_next/image?url="* && "$decoded_url" == *"/_next/static/media/"* ]]; then
-              EXPECTED="max-age=31536000"
-              TYPE="Static Media"
-            elif [[ "$url" == *"/_next/image"* && "$url" == *"storage.yandexcloud.net"* ]]; then
-              EXPECTED="max-age=3600"
-              TYPE="Dynamic Image (Yandex)"
-            elif [[ "$url" == *"/_next/image"* && "$url" == *"cdn.chelzoo.ru/_next/static/media"* ]]; then
-              EXPECTED="max-age=31536000"
-              TYPE="Static Media (via Image Optimizer)"
-            else
-              EXPECTED="max-age=3600"
-              TYPE="Other Resource"
-            fi
-
-            echo -n "Checking $TYPE: $url ... "
-            HEADER=$(curl -s -I "$url" | grep -i 'cache-control:' | tr -d '\r' || echo "NO HEADER")
-
-            if echo "$HEADER" | grep -iq "$EXPECTED"; then
-              echo "✅ PASSED (Found: $HEADER)"
-            else
-              echo "❌ FAILED"
-              echo "   Expected: $EXPECTED"
-              echo "   Found:    $HEADER"
-              EXITCODE=1
-            fi
-          done < filtered_urls.txt
-
-          # Additional logging
-          echo "=== Statistics ==="
-          echo "Quantity of URL: $(wc -l < image_urls.txt)"
-          echo "Checked URL: $(wc -l < filtered_urls.txt)"
-          echo "Errors: $EXITCODE"
-
-          exit $EXITCODE
+  runs-on: ubuntu-24.04
+  timeout-minutes: 10
+  steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Run Playwright test
+      run: npx playwright test сacheChecker.spec.ts --reporter=list
+      
+    - name: Upload results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: cache-validation-results
+        path: |
+          results.json
+          playwright-report/
