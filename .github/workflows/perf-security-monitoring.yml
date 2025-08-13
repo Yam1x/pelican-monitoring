@@ -178,28 +178,28 @@ jobs:
             lhci-links.out
 
   validate-cache-headers:
-  runs-on: ubuntu-24.04
-  timeout-minutes: 10
-  steps:
-    - uses: actions/checkout@v4
-    
-    - name: Install Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '20'
-        cache: 'npm'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install dependencies
+        run: npm ci
         
-    - name: Install dependencies
-      run: npm ci
-      
-    - name: Run Playwright test
-      run: npx playwright test сacheChecker.spec.ts --reporter=list
-      
-    - name: Upload results
-      if: always()
-      uses: actions/upload-artifact@v4
-      with:
-        name: cache-validation-results
-        path: |
-          results.json
-          playwright-report/
+      - name: Run Playwright test
+        run: npx playwright test сacheChecker.spec.ts --reporter=list
+        
+      - name: Upload results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cache-validation-results
+          path: |
+            results.json
+            playwright-report/
