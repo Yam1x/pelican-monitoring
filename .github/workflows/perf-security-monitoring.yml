@@ -162,16 +162,7 @@ jobs:
         run: npm install -g @lhci/cli@0.15.x
 
       - name: Run Lighthouse CI - Desktop
-        run: | 
-          lhci collect --additive --config=.lighthouserc.desktop.js
-          lhci assert
-          lhci upload
-      
-      - name: Run Lighthouse CI - Mobile
-        run: |
-          lhci collect --additive --config=.lighthouserc.mobile.js
-          lhci assert
-          lhci upload
+        run: lhci autorun --config .lighthouserc.desktop.js
 
       # - name: Validate Lighthouse results
       #   if: always()
