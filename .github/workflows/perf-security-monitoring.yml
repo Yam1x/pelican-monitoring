@@ -162,15 +162,18 @@ jobs:
         run: npm install -g @lhci/cli@0.15.x
 
       - name: Run Lighthouse CI - Desktop
-        run: lhci autorun --config .lighthouserc.desktop.js
+        run: |
+          if ! lhci autorun --config .lighthouserc.desktop.js; then
+            echo "LHCI_FAIL_desktop=1" >> $GITHUB_ENV
+            echo "❌ Lighthouse CI failed: Desktop" >> ./lh-errors.txt
+          fi
 
       - name: Run Lighthouse CI - Mobile
-        run: lhci autorun --config .lighthouserc.mobile.js
-
-
-      # - name: Validate Lighthouse results
-      #   if: always()
-      #   run: node scripts/validate-lighthouse.js
+        run: |
+          if ! lhci autorun --config .lighthouserc.mobile.js; then
+            echo "LHCI_FAIL_mobile=1" >> $GITHUB_ENV
+            echo "❌ Lighthouse CI failed: Mobile" >> ./lh-errors.txt
+          fi
 
       - name: Upload Lighthouse report artifacts
         if: always()
@@ -180,6 +183,19 @@ jobs:
           path: |
             .lighthouseci/
             lhci-links.out
+
+      - name: Final validation & summary
+        if: always()
+        run: |
+          echo "===== LIGHTHOUSE TEST SUMMARY ====="
+          if [ -f ./lh-errors.txt ]; then
+            cat ./lh-errors.txt
+            echo "==================================="
+            exit 1
+          else
+            echo "✅ All Lighthouse checks passed."
+          fi
+
 
   validate-cache-headers:
     runs-on: ubuntu-24.04
