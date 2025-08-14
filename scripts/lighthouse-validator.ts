@@ -1,11 +1,7 @@
-#!/usr/bin/env node
-
 import fs from 'fs';
-import path from 'path'
+import path from 'path';
 
-function main() {
-
-  interface Audit {
+interface Audit {
   id: string;
   title: string;
   score: number | null;
@@ -22,10 +18,10 @@ interface LHR {
   categories: Record<string, Category>;
 }
 
+function main() {
   try {
     const reportsDir: string = '.lighthouseci';
-    const reportFile: string | undefined = fs.readdirSync(reportsDir)
-    .find(file => file.startsWith('lhr-') && file.endsWith('.json'));
+    const reportFile: string | undefined = fs.readdirSync(reportsDir).find(file => file.startsWith('lhr-') && file.endsWith('.json'));
     
     if (!reportFile) {
       throw new Error('No Lighthouse JSON report found in .lighthouseci directory');
@@ -49,12 +45,11 @@ interface LHR {
   }
 }
 
-function processReport(data) {
+function processReport(data: LHR) {
   const audits = data.audits;
   const categories = data.categories;
 
-  // Performance metrics
-  const performanceThresholds = {
+  const performanceThresholds: Record<string, { warn: number; error: number }> = {
     'first-contentful-paint': { warn: 1800, error: 3000 },
     'largest-contentful-paint': { warn: 2400, error: 4000 },
     'speed-index': { warn: 3400, error: 5800 },
@@ -62,25 +57,22 @@ function processReport(data) {
     'interactive': { warn: Infinity, error: 5000 }
   };
 
-  // Security metrics
-  const securityThresholds = {
+  const securityThresholds: Record<string, { minScore: number }> = {
     'csp-xss': { minScore: 1 },
     'is-on-https': { minScore: 1 },
     'redirects-http': { minScore: 1 },
     'has-hsts': { minScore: 1 }
   };
 
-  // Warning metrics (only show if score < 1)
-  const warningMetrics = {
+  const warningMetrics: Record<string, string> = {
     'uses-http2': 'Uses HTTP/2',
     'uses-rel-preconnect': 'Uses rel=preconnect'
   };
 
   console.log('\n📊 Lighthouse Audit Summary:');
-  let hasError = false;
-  let hasWarning = false;
+  let hasError: boolean = false;
+  let hasWarning: boolean = false;
 
-  // Check performance metrics
   console.log('\n🚀 Performance Metrics:');
   Object.entries(performanceThresholds).forEach(([id, limits]) => {
     const audit = audits[id];
@@ -89,9 +81,9 @@ function processReport(data) {
       return;
     }
 
-    const value = audit.numericValue;
-    const unit = audit.numericUnit || '';
-    let status, emoji;
+    const value: number = audit.numericValue ?? 0;
+    const unit: string = audit.numericUnit || '';
+    let status: string, emoji: string;
 
     if (value > limits.error) {
       status = 'ERROR';
@@ -109,7 +101,6 @@ function processReport(data) {
     console.log(`${emoji} ${audit.title}: ${Math.round(value)}${unit} | warn ≤ ${limits.warn}, error ≤ ${limits.error} (${status})`);
   });
 
-  // Check security metrics
   console.log('\n🔒 Security Metrics:');
   Object.entries(securityThresholds).forEach(([id, limits]) => {
     const audit = audits[id];
@@ -118,8 +109,8 @@ function processReport(data) {
       return;
     }
 
-    const score = audit.score * 100;
-    let status, emoji;
+    const score: number = (audit.score ?? 0) * 100;
+    let status: string, emoji: string;
 
     if (score < limits.minScore * 100) {
       status = 'ERROR';
@@ -133,13 +124,12 @@ function processReport(data) {
     console.log(`${emoji} ${audit.title}: ${Math.round(score)}/100 | min ${limits.minScore * 100} (${status})`);
   });
 
-  // Check warning metrics
   console.log('\nℹ️  Additional Checks:');
   Object.entries(warningMetrics).forEach(([id, title]) => {
     const audit = audits[id];
     if (!audit) return;
 
-    const score = audit.score * 100;
+    const score: number = (audit.score ?? 0) * 100;
     if (score < 100) {
       console.log(`⚠️  ${title}: ${Math.round(score)}/100 (WARNING)`);
       hasWarning = true;
@@ -148,12 +138,11 @@ function processReport(data) {
     }
   });
 
-  // Check categories
   console.log('\n🏆 Category Scores:');
-  const perfScore = Math.round((categories.performance?.score || 0) * 100);
+  const perfScore: number = Math.round((categories.performance?.score ?? 0) * 100);
   console.log(`🚀 Performance: ${perfScore}/100`);
 
-  const a11yScore = Math.round((categories.accessibility?.score || 0) * 100);
+  const a11yScore: number = Math.round((categories.accessibility?.score ?? 0) * 100);
   if (a11yScore < 90) {
     console.log(`❌ Accessibility: ${a11yScore}/100 | min 90 (ERROR)`);
     hasError = true;
@@ -161,7 +150,6 @@ function processReport(data) {
     console.log(`✅ Accessibility: ${a11yScore}/100 (PASS)`);
   }
 
-  // Final summary
   if (hasError) {
     console.error('\n❌ One or more metrics exceeded ERROR thresholds');
     process.exit(1);
