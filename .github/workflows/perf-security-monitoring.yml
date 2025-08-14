@@ -164,14 +164,14 @@ jobs:
 
       - name: Run Lighthouse CI - Desktop
         run: |
-          if ! lhci autorun --config .lighthouserc.desktop.ts; then
+          if ! lhci autorun --config .lighthouserc.desktop.yml; then
             echo "LHCI_FAIL_desktop=1" >> $GITHUB_ENV
             echo "❌ Lighthouse CI failed: Desktop" >> ./lh-errors.txt
           fi
 
       - name: Run Lighthouse CI - Mobile
         run: |
-          if ! lhci autorun --config .lighthouserc.mobile.ts; then
+          if ! lhci autorun --config .lighthouserc.mobile.yml; then
             echo "LHCI_FAIL_mobile=1" >> $GITHUB_ENV
             echo "❌ Lighthouse CI failed: Mobile" >> ./lh-errors.txt
           fi
