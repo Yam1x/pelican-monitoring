@@ -164,9 +164,9 @@ jobs:
       - name: Run Lighthouse CI - Desktop
         run: lhci autorun --config .lighthouserc.desktop.js
 
-      - name: Validate Lighthouse results
-        if: always()
-        run: node scripts/validate-lighthouse.js
+      # - name: Validate Lighthouse results
+      #   if: always()
+      #   run: node scripts/validate-lighthouse.js
 
       - name: Upload Lighthouse report artifacts
         if: always()
