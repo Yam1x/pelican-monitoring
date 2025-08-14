@@ -91,7 +91,7 @@ jobs:
 
           cp ./report/homePage/home-page.jtl ./result/home-page.jtl || true
 
-          if ! node tests/home-page-jmeter-validator.ts; then
+          if ! node scripts/home-page-jmeter-validator.ts; then
             echo "PARSER_FAIL_homePage=1" >> $GITHUB_ENV
             echo "❌ Parser failed: Home Page" >> ./errors/summary.txt
           fi
@@ -111,7 +111,7 @@ jobs:
 
           cp ./report/documentsPage/documents-page.jtl ./result/documents-page.jtl || true
 
-          if ! node tests/documents-page-jmeter-validator.ts; then
+          if ! node scripts/documents-page-jmeter-validator.ts; then
             echo "PARSER_FAIL_documentsPage=1" >> $GITHUB_ENV
             echo "❌ Parser failed: Documents Page" >> ./errors/summary.txt
           fi
@@ -131,7 +131,7 @@ jobs:
 
           cp ./report/news-page/news-page.jtl ./result/news-page.jtl || true
 
-          if ! node tests/news-page-jmeter-validator.ts; then
+          if ! node scripts/news-page-jmeter-validator.ts; then
             echo "PARSER_FAIL_newsPage=1" >> $GITHUB_ENV
             echo "❌ Parser failed: News Page" >> ./errors/summary.txt
           fi
@@ -196,7 +196,7 @@ jobs:
         run: npx playwright install --with-deps chromium
         
       - name: Run Playwright test
-        run: npx playwright test tests/cacheChecker.spec.ts --reporter=list
+        run: npx playwright test tests/playwright-tests/cacheChecker.spec.ts --reporter=list
         
       - name: Upload results
         if: always()
