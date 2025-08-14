@@ -164,6 +164,10 @@ jobs:
       - name: Run Lighthouse CI - Desktop
         run: lhci autorun --config .lighthouserc.desktop.js
 
+      - name: Run Lighthouse CI - Mobile
+        run: lhci autorun --config .lighthouserc.mobile.js
+
+
       # - name: Validate Lighthouse results
       #   if: always()
       #   run: node scripts/validate-lighthouse.js
