@@ -5,7 +5,6 @@ module.exports = {
       numberOfRuns: 1,
       settings: {
         additive: "true",
-        preset: 'mobile',
         output: ['html', 'json'],
       },
     },
