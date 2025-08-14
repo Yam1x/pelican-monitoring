@@ -1,36 +1,48 @@
 #!/usr/bin/env node
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path'
 
 function main() {
+
+  interface Audit {
+  id: string;
+  title: string;
+  score: number | null;
+  numericValue?: number;
+  numericUnit?: string;
+}
+
+interface Category {
+  score: number;
+}
+
+interface LHR {
+  audits: Record<string, Audit>;
+  categories: Record<string, Category>;
+}
+
   try {
-    const reportsDir = '.lighthouseci';
-    const reportFile = fs.readdirSync(reportsDir)
-      .find(file => file.startsWith('lhr-') && file.endsWith('.json'));
+    const reportsDir: string = '.lighthouseci';
+    const reportFile: string | undefined = fs.readdirSync(reportsDir)
+    .find(file => file.startsWith('lhr-') && file.endsWith('.json'));
     
     if (!reportFile) {
       throw new Error('No Lighthouse JSON report found in .lighthouseci directory');
     }
 
-    const reportPath = path.join(reportsDir, reportFile);
+    const reportPath: string = path.join(reportsDir, reportFile);
     console.log(`Found report: ${reportPath}`);
 
-    const rawData = fs.readFileSync(reportPath, 'utf8');
-    const report = JSON.parse(rawData);
+    const rawData: string = fs.readFileSync(reportPath, 'utf8');
+    const report: LHR = JSON.parse(rawData);
 
     if (!report.audits || !report.categories) {
-      if (Array.isArray(report) && report[0]?.audits) {
-        console.log('Using legacy report format (array)');
-        processReport(report[0]);
-      } else {
-        throw new Error('Invalid Lighthouse report format - missing required fields');
-      }
-    } else {
-      console.log('Using new report format (object)');
-      processReport(report);
+      throw new Error('Invalid Lighthouse report format - missing required fields');
     }
-  } catch (error) {
+
+    processReport(report);
+  } catch (error: any) {
     console.error('\n❌ Error processing Lighthouse results:');
     console.error(error.stack);
     process.exit(1);
