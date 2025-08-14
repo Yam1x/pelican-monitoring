@@ -1,5 +1,5 @@
-const fs = require('fs');
-const xml2js = require('xml2js');
+import fs from 'fs';
+import xml2js from 'xml2js';
 
 (async () => {
   const filePath = './result/newsPage.jtl';
