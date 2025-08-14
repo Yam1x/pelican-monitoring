@@ -4,8 +4,7 @@ module.exports = {
       url: ['https://chelzoo.ru?mobile'],
       numberOfRuns: 1,
       settings: {
-        additive: "true",
-        preset: 'desktop',
+        preset: 'mobile',
         output: ['html', 'json'],
       },
     },
@@ -14,7 +13,7 @@ module.exports = {
       outputDir: '.lighthouseci'
     },
     assert: {
-        preset: 'lighthouse:recommended'
-      }
-    },
-  };
+      preset: 'lighthouse:recommended'
+    }
+  },
+};
