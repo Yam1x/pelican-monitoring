@@ -79,7 +79,7 @@ jobs:
       - name: Run JMeter - Home Page
         run: |
           mkdir -p ./report/home-page
-          if ! jmeter -n -t ./tests/homePageTest.jmx \
+          if ! jmeter -n -t ./tests/jmeter-tests/homePageTest.jmx \
             -l ./report/homePage/home-page.jtl \
             -Jjmeter.save.saveservice.output_format=xml \
             -Jjmeter.save.saveservice.print_field_names=true \
@@ -91,7 +91,7 @@ jobs:
 
           cp ./report/homePage/home-page.jtl ./result/home-page.jtl || true
 
-          if ! node tests/home-page-jmeter-validator.js; then
+          if ! node tests/home-page-jmeter-validator.ts; then
             echo "PARSER_FAIL_homePage=1" >> $GITHUB_ENV
             echo "❌ Parser failed: Home Page" >> ./errors/summary.txt
           fi
@@ -99,7 +99,7 @@ jobs:
       - name: Run JMeter - Documents Page
         run: |
           mkdir -p ./report/documents-page
-          if ! jmeter -n -t ./tests/documents-page.jmx \
+          if ! jmeter -n -t ./tests/jmeter-tests/documents-page.jmx \
             -l ./report/documentsPage/documents-page.jtl \
             -Jjmeter.save.saveservice.output_format=xml \
             -Jjmeter.save.saveservice.print_field_names=true \
@@ -111,7 +111,7 @@ jobs:
 
           cp ./report/documentsPage/documents-page.jtl ./result/documents-page.jtl || true
 
-          if ! node tests/documents-page-jmeter-validator.js; then
+          if ! node tests/documents-page-jmeter-validator.ts; then
             echo "PARSER_FAIL_documentsPage=1" >> $GITHUB_ENV
             echo "❌ Parser failed: Documents Page" >> ./errors/summary.txt
           fi
@@ -119,7 +119,7 @@ jobs:
       - name: Run JMeter - News Page
         run: |
           mkdir -p ./report/news-page
-          if ! jmeter -n -t ./tests/news-page.jmx \
+          if ! jmeter -n -t ./tests/jmeter-tests/news-page.jmx \
             -l ./report/newsPage/news-page.jtl \
             -Jjmeter.save.saveservice.output_format=xml \
             -Jjmeter.save.saveservice.print_field_names=true \
@@ -131,7 +131,7 @@ jobs:
 
           cp ./report/news-page/news-page.jtl ./result/news-page.jtl || true
 
-          if ! node tests/news-page-jmeter-validator.js; then
+          if ! node tests/news-page-jmeter-validator.ts; then
             echo "PARSER_FAIL_newsPage=1" >> $GITHUB_ENV
             echo "❌ Parser failed: News Page" >> ./errors/summary.txt
           fi
