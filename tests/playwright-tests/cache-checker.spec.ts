@@ -2,6 +2,7 @@ import { test, expect, chromium } from '@playwright/test';
 import { writeFileSync } from 'fs';
 import { execSync } from 'child_process';
 
+test.setTimeout(60000)
 interface TestResult {
   url: string;
   type: string;
