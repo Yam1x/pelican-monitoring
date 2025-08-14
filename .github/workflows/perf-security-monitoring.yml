@@ -91,7 +91,7 @@ jobs:
 
           cp ./report/home-page/home-page.jtl ./result/home-page.jtl || true
 
-          if ! npx ts-node scripts/home-page-jmeter-validator.ts; then
+          if ! tsx scripts/home-page-jmeter-validator.ts; then
             echo "PARSER_FAIL_homePage=1" >> $GITHUB_ENV
             echo "❌ Parser failed: Home Page" >> ./errors/summary.txt
           fi
@@ -111,7 +111,7 @@ jobs:
 
           cp ./report/documents-page/documents-page.jtl ./result/documents-page.jtl || true
 
-          if ! npx ts-node scripts/documents-page-jmeter-validator.ts; then
+          if ! tsx scripts/documents-page-jmeter-validator.ts; then
             echo "PARSER_FAIL_documentsPage=1" >> $GITHUB_ENV
             echo "❌ Parser failed: Documents Page" >> ./errors/summary.txt
           fi
@@ -131,7 +131,7 @@ jobs:
 
           cp ./report/news-page/news-page.jtl ./result/news-page.jtl || true
 
-          if ! npx ts-node scripts/news-page-jmeter-validator.ts; then
+          if ! tsx scripts/news-page-jmeter-validator.ts; then
             echo "PARSER_FAIL_newsPage=1" >> $GITHUB_ENV
             echo "❌ Parser failed: News Page" >> ./errors/summary.txt
           fi
