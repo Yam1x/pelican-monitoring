@@ -1,7 +1,7 @@
 module.exports = {
   ci: {
     collect: {
-      url: ['https://chelzoo.ru?desktop'],
+      url: ['https://chelzoo.ru'],
       numberOfRuns: 1,
       settings: {
         additive: "true",
