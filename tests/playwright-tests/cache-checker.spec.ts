@@ -41,6 +41,7 @@ test.describe('Image Cache Validation', () => {
     const filteredUrls = Array.from(imageUrls).filter(url => 
       url.includes('cdn.chelzoo.ru') || url.includes('storage.yandexcloud.net')
     );
+    // Отслеживать, чтобы обязательно присутствовал cdn.chelzoo.ru в урле картинок и подумать над условием
 
     for (const url of filteredUrls) {
       const decodedUrl = decodeURIComponent(url);
