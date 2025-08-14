@@ -4,6 +4,7 @@ module.exports = {
       url: ['https://chelzoo.ru?desktop'],
       numberOfRuns: 1,
       settings: {
+        additive: "true",
         preset: 'desktop',
         output: ['html', 'json'],
       },
