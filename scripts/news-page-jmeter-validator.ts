@@ -31,13 +31,6 @@ import xml2js from 'xml2js';
     const p95: number = sorted[Math.floor(sorted.length * 0.95)];
     const p99: number = sorted[Math.floor(sorted.length * 0.99)];
 
-    // console.log(`📊News Page Load Tests Report (Jmeter):`);
-    // console.log(`  Max response: ${max}ms`);
-    // console.log(`  Average response time: ${avg}ms`);
-    // console.log(`  95th percentile: ${p95}ms`);
-    // console.log(`  99th percentile: ${p99}ms`);
-    // console.log(`  Error requests: ${errorCount}`);
-
     console.log(`📊News Page Load Tests Report (Jmeter): \n
         Max response: ${max}ms \n
         Average response time: ${avg}ms \n
