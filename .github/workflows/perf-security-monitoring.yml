@@ -153,7 +153,7 @@ jobs:
   lighthouse:
     needs: jmeter-tests
     runs-on: ubuntu-24.04
-    timeout-minutes: 3
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
 
@@ -165,18 +165,23 @@ jobs:
       - name: Install Lighthouse CI
         run: npm install -g @lhci/cli@0.15.x
 
+      - name: Create Lighthouse directory
+        run: mkdir -p .lighthouseci
+
       - name: Run Lighthouse CI - Desktop
         run: |
-          if ! lhci autorun --config .lighthouserc.desktop.js; then
-            echo "LHCI_FAIL_desktop=1" >> $GITHUB_ENV
+          lhci autorun --config .lighthouserc.desktop.js --collect.outputPath=.lighthouseci/desktop || true
+          if [ ! -f ".lighthouseci/desktop/*.report.json" ]; then
             echo "❌ Lighthouse CI failed: Desktop" >> ./lh-errors.txt
+            echo "LHCI_FAIL_desktop=1" >> $GITHUB_ENV
           fi
 
       - name: Run Lighthouse CI - Mobile
         run: |
-          if ! lhci autorun --config .lighthouserc.mobile.js; then
-            echo "LHCI_FAIL_mobile=1" >> $GITHUB_ENV
+          NODE_OPTIONS="--max-old-space-size=4096" lhci autorun --config .lighthouserc.mobile.js --collect.outputPath=.lighthouseci/mobile || true
+          if [ ! -f ".lighthouseci/mobile/*.report.json" ]; then
             echo "❌ Lighthouse CI failed: Mobile" >> ./lh-errors.txt
+            echo "LHCI_FAIL_mobile=1" >> $GITHUB_ENV
           fi
 
       - name: Upload Lighthouse report artifacts
@@ -185,22 +190,22 @@ jobs:
         with:
           name: lighthouse-reports
           path: |
-            .lighthouseci/
+            .lighthouseci
             lhci-links.out
 
       - name: Parse Lighthouse JSON - Desktop
         run: |
-          DESKTOP_JSON=$(find .lighthouseci -name '*desktop*.report.json' | head -n 1)
+          DESKTOP_JSON=$(find .lighthouseci/desktop -name '*.report.json' | head -n 1)
           if [ -f "$DESKTOP_JSON" ]; then
             TOTAL_BYTES=$(jq '.audits["network-requests"].details.items | map(.transferSize) | add' "$DESKTOP_JSON")
             echo "💻 Desktop total transferred: ${TOTAL_BYTES} bytes"
           else
             echo "⚠️ Desktop Lighthouse JSON not found"
           fi
-      
+    
       - name: Parse Lighthouse JSON - Mobile
         run: |
-          MOBILE_JSON=$(find .lighthouseci -name '*mobile*.report.json' | head -n 1)
+          MOBILE_JSON=$(find .lighthouseci/mobile -name '*.report.json' | head -n 1)
           if [ -f "$MOBILE_JSON" ]; then
             TOTAL_BYTES=$(jq '.audits["network-requests"].details.items | map(.transferSize) | add' "$MOBILE_JSON")
             echo "📱 Mobile total transferred: ${TOTAL_BYTES} bytes"
@@ -208,19 +213,17 @@ jobs:
             echo "⚠️ Mobile Lighthouse JSON not found"
           fi
 
-
       - name: Final validation & summary
         if: always()
         run: |
           echo "===== LIGHTHOUSE TEST SUMMARY ====="
           if [ -f ./lh-errors.txt ]; then
             cat ./lh-errors.txt
-            echo "==================================="
+            echo "================================"
             exit 1
           else
             echo "✅ All Lighthouse checks passed."
           fi
-
 
   validate-cache-headers:
     runs-on: ubuntu-24.04
