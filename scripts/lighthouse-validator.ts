@@ -20,17 +20,17 @@ interface LHR {
 
 function main() {
   try {
-    const reportsDir: string = '.lighthouseci';
-    const reportFile: string | undefined = fs.readdirSync(reportsDir).find(file => file.startsWith('lhr-') && file.endsWith('.json'));
+    const reportsDir = '.lighthouseci';
+    const reportFile = fs.readdirSync(reportsDir).find(file => file.startsWith('lhr-') && file.endsWith('.json'));
     
     if (!reportFile) {
       throw new Error('No Lighthouse JSON report found in .lighthouseci directory');
     }
 
-    const reportPath: string = path.join(reportsDir, reportFile);
+    const reportPath = path.join(reportsDir, reportFile);
     console.log(`Found report: ${reportPath}`);
 
-    const rawData: string = fs.readFileSync(reportPath, 'utf8');
+    const rawData = fs.readFileSync(reportPath, 'utf8');
     const report: LHR = JSON.parse(rawData);
 
     if (!report.audits || !report.categories) {
@@ -64,14 +64,14 @@ function processReport(data: LHR) {
     'has-hsts': { minScore: 1 }
   };
 
-  const warningMetrics: Record<string, string> = {
+  const warningMetrics = {
     'uses-http2': 'Uses HTTP/2',
     'uses-rel-preconnect': 'Uses rel=preconnect'
   };
 
   console.log('\n📊 Lighthouse Audit Summary:');
-  let hasError: boolean = false;
-  let hasWarning: boolean = false;
+  let hasError = false;
+  let hasWarning = false;
 
   console.log('\n🚀 Performance Metrics:');
   Object.entries(performanceThresholds).forEach(([id, limits]) => {
@@ -81,8 +81,8 @@ function processReport(data: LHR) {
       return;
     }
 
-    const value: number = audit.numericValue ?? 0;
-    const unit: string = audit.numericUnit || '';
+    const value = audit.numericValue ?? 0;
+    const unit = audit.numericUnit || '';
     let status: string, emoji: string;
 
     if (value > limits.error) {
@@ -109,8 +109,8 @@ function processReport(data: LHR) {
       return;
     }
 
-    const score: number = (audit.score ?? 0) * 100;
-    let status: string, emoji: string;
+    const score = (audit.score ?? 0) * 100;
+    let status, emoji: string;
 
     if (score < limits.minScore * 100) {
       status = 'ERROR';
@@ -129,7 +129,7 @@ function processReport(data: LHR) {
     const audit = audits[id];
     if (!audit) return;
 
-    const score: number = (audit.score ?? 0) * 100;
+    const score = (audit.score ?? 0) * 100;
     if (score < 100) {
       console.log(`⚠️  ${title}: ${Math.round(score)}/100 (WARNING)`);
       hasWarning = true;
@@ -139,10 +139,10 @@ function processReport(data: LHR) {
   });
 
   console.log('\n🏆 Category Scores:');
-  const perfScore: number = Math.round((categories.performance?.score ?? 0) * 100);
+  const perfScore = Math.round((categories.performance?.score ?? 0) * 100);
   console.log(`🚀 Performance: ${perfScore}/100`);
 
-  const a11yScore: number = Math.round((categories.accessibility?.score ?? 0) * 100);
+  const a11yScore = Math.round((categories.accessibility?.score ?? 0) * 100);
   if (a11yScore < 90) {
     console.log(`❌ Accessibility: ${a11yScore}/100 | min 90 (ERROR)`);
     hasError = true;
