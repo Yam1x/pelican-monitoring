@@ -84,6 +84,7 @@ jobs:
             -Jjmeter.save.saveservice.output_format=xml \
             -Jjmeter.save.saveservice.print_field_names=true \
             -Jjmeter.save.saveservice.response_data.on_error=true \
+            -Jjmeter.save.saveservice.bytes=true \
             -Jjmeter.save.saveservice.timestamp_format=ms; then
             echo "JMETER_FAIL_homePage=1" >> $GITHUB_ENV
             echo "❌ JMeter test failed: Home Page" >> ./errors/summary.txt
@@ -104,6 +105,7 @@ jobs:
             -Jjmeter.save.saveservice.output_format=xml \
             -Jjmeter.save.saveservice.print_field_names=true \
             -Jjmeter.save.saveservice.response_data.on_error=true \
+            -Jjmeter.save.saveservice.bytes=true \
             -Jjmeter.save.saveservice.timestamp_format=ms; then
             echo "JMETER_FAIL_documentsPage=1" >> $GITHUB_ENV
             echo "❌ JMeter test failed: Documents Page" >> ./errors/summary.txt
@@ -124,6 +126,7 @@ jobs:
             -Jjmeter.save.saveservice.output_format=xml \
             -Jjmeter.save.saveservice.print_field_names=true \
             -Jjmeter.save.saveservice.response_data.on_error=true \
+            -Jjmeter.save.saveservice.bytes=true \
             -Jjmeter.save.saveservice.timestamp_format=ms; then
             echo "JMETER_FAIL_newsPage=1" >> $GITHUB_ENV
             echo "❌ JMeter test failed: News Page" >> ./errors/summary.txt
@@ -184,6 +187,27 @@ jobs:
           path: |
             .lighthouseci/
             lhci-links.out
+
+      - name: Parse Lighthouse JSON - Desktop
+        run: |
+          DESKTOP_JSON=$(find .lighthouseci -name '*desktop*.report.json' | head -n 1)
+          if [ -f "$DESKTOP_JSON" ]; then
+            TOTAL_BYTES=$(jq '.audits["network-requests"].details.items | map(.transferSize) | add' "$DESKTOP_JSON")
+            echo "💻 Desktop total transferred: ${TOTAL_BYTES} bytes"
+          else
+            echo "⚠️ Desktop Lighthouse JSON not found"
+          fi
+      
+      - name: Parse Lighthouse JSON - Mobile
+        run: |
+          MOBILE_JSON=$(find .lighthouseci -name '*mobile*.report.json' | head -n 1)
+          if [ -f "$MOBILE_JSON" ]; then
+            TOTAL_BYTES=$(jq '.audits["network-requests"].details.items | map(.transferSize) | add' "$MOBILE_JSON")
+            echo "📱 Mobile total transferred: ${TOTAL_BYTES} bytes"
+          else
+            echo "⚠️ Mobile Lighthouse JSON not found"
+          fi
+
 
       - name: Final validation & summary
         if: always()
