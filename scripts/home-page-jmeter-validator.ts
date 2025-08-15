@@ -31,12 +31,19 @@ import xml2js from 'xml2js';
     const p95: number = sorted[Math.floor(sorted.length * 0.95)];
     const p99: number = sorted[Math.floor(sorted.length * 0.99)];
 
+    const totalBytes: number = samples
+      .map((s: any) => parseInt(s.$.by || '0', 10))
+      .reduce((a, b) => a + b, 0);
+    const totalKB = (totalBytes / 1024).toFixed(2);
+    const totalMB = (totalBytes / (1024 * 1024)).toFixed(2);
+
     console.log(`📊Home Page Load Tests Report (Jmeter): \n
-        Max response: ${max}ms \n
-        Average response time: ${avg}ms \n
-        95th percentile: ${p95}ms \n
-        99th percentile: ${p99}ms \n
-        Error requests: ${errorCount}`);
+        ⏱ Max response: ${max}ms \n
+        ⏱ Average response time: ${avg}ms \n
+        ⏱ 95th percentile: ${p95}ms \n
+        ⏱ 99th percentile: ${p99}ms \n
+        ❗Error requests: ${errorCount} \n
+        Total transferred: ${totalBytes} bytes (${totalKB} KB / ${totalMB} MB)`);
 
     const issues: string[] = [];
     if (max >= 5000) issues.push(`❌ Max response time is too high (>5000ms): ${max}`);
