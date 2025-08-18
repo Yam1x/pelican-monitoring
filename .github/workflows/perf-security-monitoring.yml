@@ -184,7 +184,7 @@ jobs:
 
       - name: Run Lighthouse CI (Desktop)
         run: |
-          lhci autorun --config .lighthouserc.desktop.js --collect.outputPath=.lighthouseci/desktop > .lighthouseci/desktop-lhci.log 2>&1 || true
+          lhci autorun --config .lighthouserc.desktop.js --collect.outputPath=.lighthouseci/desktop || true
           if [ ! -f ".lighthouseci/desktop/*.report.json" ]; then
             echo "❌ Lighthouse CI failed: Desktop" >> ./lh-errors.txt
             echo "LHCI_FAIL_desktop=1" >> $GITHUB_ENV
@@ -192,52 +192,11 @@ jobs:
 
       - name: Run Lighthouse CI (Mobile)
         run: |
-          lhci autorun --config .lighthouserc.mobile.js --collect.outputPath=.lighthouseci/mobile > .lighthouseci/mobile-lhci.log 2>&1 || true
+          lhci autorun --config .lighthouserc.mobile.js --collect.outputPath=.lighthouseci/mobile || true
           if [ ! -f ".lighthouseci/mobile/*.report.json" ]; then
             echo "❌ Lighthouse CI failed: Mobile" >> ./lh-errors.txt
             echo "LHCI_FAIL_mobile=1" >> $GITHUB_ENV
           fi
-
-      - name: Summarize Desktop Lighthouse Results (CLICK HERE TO SEE RESULTS)
-        run: |
-          echo "📊 Desktop Lighthouse CI Summary"
-          echo "========================="
-          if [ -f ".lighthouseci/desktop/*.report.json" ]; then
-            # Find the JSON report (assuming one report for simplicity)
-            REPORT=$(ls .lighthouseci/desktop/*.report.json | head -n 1)
-            if [ -n "$REPORT" ]; then
-              echo "Processing report: $REPORT"
-              # Parse failures and warnings
-              echo "🔴 Failures:"
-              jq -r '.audits | to_entries | .[] | select(.value.score < 0.9 or .value.numericValue > 0) | select(.value.scoreDisplayMode == "numeric" or .value.scoreDisplayMode == "binary") | select(.value.score < 0.9) | "- \(.key): \(.value.title) (Score: \(.value.score), Expected: >=0.9) [\(.value.description)]"' "$REPORT"
-              echo "🟡 Warnings:"
-              jq -r '.audits | to_entries | .[] | select(.value.score < 0.9 or .value.numericValue > 0) | select(.value.scoreDisplayMode == "informative" or .value.scoreDisplayMode == "notApplicable") | "- \(.key): \(.value.title) (Value: \(.value.numericValue // .value.score)) [\(.value.description)]"' "$REPORT"
-            else
-              echo "No valid report found in .lighthouseci/desktop/"
-            fi
-          else
-            echo "No Lighthouse reports generated."
-          fi
-
-          echo "📊 Mobile Lighthouse CI Summary"
-          echo "========================="
-          if [ -f ".lighthouseci/mobile/*.report.json" ]; then
-            # Find the JSON report (assuming one report for simplicity)
-            REPORT=$(ls .lighthouseci/mobile/*.report.json | head -n 1)
-            if [ -n "$REPORT" ]; then
-              echo "Processing report: $REPORT"
-              # Parse failures and warnings
-              echo "🔴 Failures:"
-              jq -r '.audits | to_entries | .[] | select(.value.score < 0.9 or .value.numericValue > 0) | select(.value.scoreDisplayMode == "numeric" or .value.scoreDisplayMode == "binary") | select(.value.score < 0.9) | "- \(.key): \(.value.title) (Score: \(.value.score), Expected: >=0.9) [\(.value.description)]"' "$REPORT"
-              echo "🟡 Warnings:"
-              jq -r '.audits | to_entries | .[] | select(.value.score < 0.9 or .value.numericValue > 0) | select(.value.scoreDisplayMode == "informative" or .value.scoreDisplayMode == "notApplicable") | "- \(.key): \(.value.title) (Value: \(.value.numericValue // .value.score)) [\(.value.description)]"' "$REPORT"
-            else
-              echo "No valid report found in .lighthouseci/mobile/"
-            fi
-          else
-            echo "No Lighthouse reports generated."
-          fi
-        if: always()
 
       - name: Final validation & summary
         if: always()
