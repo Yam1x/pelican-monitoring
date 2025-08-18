@@ -76,7 +76,7 @@ jobs:
           mkdir -p ./result
           mkdir -p ./errors
 
-      - name: Run JMeter - Home Page (CLICK HERE TO SEE RESULTS)
+      - name: Run JMeter - Home Page
         run: |
           mkdir -p ./report/home-page
           if ! jmeter -n -t ./tests/jmeter-tests/home-page.jmx \
@@ -92,12 +92,7 @@ jobs:
 
           cp ./report/home-page/home-page.jtl ./result/home-page.jtl || true
 
-          if ! npx tsx scripts/home-page-jmeter-validator.ts; then
-            echo "PARSER_FAIL_homePage=1" >> $GITHUB_ENV
-            echo "❌ Parser failed: Home Page" >> ./errors/summary.txt
-          fi
-
-      - name: Run JMeter - Documents Page (CLICK HERE TO SEE RESULTS)
+      - name: Run JMeter - Documents Page
         run: |
           mkdir -p ./report/documents-page
           if ! jmeter -n -t ./tests/jmeter-tests/documents-page.jmx \
@@ -124,12 +119,7 @@ jobs:
 
           cp ./report/documents-page/documents-page.jtl ./result/documents-page.jtl || true
 
-          if ! npx tsx scripts/documents-page-jmeter-validator.ts; then
-            echo "PARSER_FAIL_documentsPage=1" >> $GITHUB_ENV
-            echo "❌ Parser failed: Documents Page" >> ./errors/summary.txt
-          fi
-
-      - name: Run JMeter - News Page (CLICK HERE TO SEE RESULTS)
+      - name: Run JMeter - News Page
         run: |
           mkdir -p ./report/news-page
           if ! jmeter -n -t ./tests/jmeter-tests/news-page.jmx \
@@ -144,17 +134,23 @@ jobs:
           fi
 
           cp ./report/news-page/news-page.jtl ./result/news-page.jtl || true
+      
+      - name: Validate JMeter reports (CLICK HERE TO SEE RESULTS)
+        run: |
+          if ! npx tsx scripts/home-page-jmeter-validator.ts; then
+            echo "PARSER_FAIL_homePage=1" >> $GITHUB_ENV
+            echo "❌ Parser failed: Home Page" >> ./errors/summary.txt
+          fi
+
+          if ! npx tsx scripts/documents-page-jmeter-validator.ts; then
+            echo "PARSER_FAIL_documentsPage=1" >> $GITHUB_ENV
+            echo "❌ Parser failed: Documents Page" >> ./errors/summary.txt
+          fi
 
           if ! npx tsx scripts/news-page-jmeter-validator.ts; then
             echo "PARSER_FAIL_newsPage=1" >> $GITHUB_ENV
             echo "❌ Parser failed: News Page" >> ./errors/summary.txt
           fi
-      
-      - name: Upload JMeter reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: jmeter-reports
-          path: ./report/**
 
       - name: Final validation & summary
         run: |
