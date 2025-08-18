@@ -8,7 +8,7 @@ export function printJmeterIssues({
     errorCount: number;
 }) {
     const issues: string[] = [];
-    if (max >= 5000) issues.push(`❌ Max response time is too high (>5000ms): ${max}`);
+    if (max >= 1000) issues.push(`❌ Max response time is too high (>5000ms): ${max}`);
     if (avg >= 1500) issues.push(`❌ Average response time is too high (>1500ms): ${avg}`);
     if (errorCount !== 0) issues.push(`❌ There are errors while processing requests from JMeter`);
 
