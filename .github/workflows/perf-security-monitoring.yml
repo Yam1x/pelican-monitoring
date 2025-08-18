@@ -182,50 +182,62 @@ jobs:
       - name: Create Lighthouse directory
         run: mkdir -p .lighthouseci
 
-      - name: Run Lighthouse CI - Desktop
+      - name: Run Lighthouse CI (Desktop)
         run: |
-          lhci autorun --config .lighthouserc.desktop.js --collect.outputPath=.lighthouseci/desktop || true
+          lhci autorun --config .lighthouserc.desktop.js --collect.outputPath=.lighthouseci/desktop > .lighthouseci/desktop-lhci.log 2>&1 || true
           if [ ! -f ".lighthouseci/desktop/*.report.json" ]; then
             echo "❌ Lighthouse CI failed: Desktop" >> ./lh-errors.txt
             echo "LHCI_FAIL_desktop=1" >> $GITHUB_ENV
           fi
 
-      - name: Run Lighthouse CI - Mobile
+      - name: Run Lighthouse CI (Mobile)
         run: |
-          NODE_OPTIONS="--max-old-space-size=4096" lhci autorun --config .lighthouserc.mobile.js --collect.outputPath=.lighthouseci/mobile || true
+          lhci autorun --config .lighthouserc.mobile.js --collect.outputPath=.lighthouseci/mobile > .lighthouseci/mobile-lhci.log 2>&1 || true
           if [ ! -f ".lighthouseci/mobile/*.report.json" ]; then
             echo "❌ Lighthouse CI failed: Mobile" >> ./lh-errors.txt
             echo "LHCI_FAIL_mobile=1" >> $GITHUB_ENV
           fi
 
-      - name: Upload Lighthouse report artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: lighthouse-reports
-          path: |
-            .lighthouseci
-            lhci-links.out
+      - name: Summarize Desktop Lighthouse Results (CLICK HERE TO SEE RESULTS)
+        run: |
+          echo "📊 Desktop Lighthouse CI Summary"
+          echo "========================="
+          if [ -f ".lighthouseci/desktop/*.report.json" ]; then
+            # Find the JSON report (assuming one report for simplicity)
+            REPORT=$(ls .lighthouseci/desktop/*.report.json | head -n 1)
+            if [ -n "$REPORT" ]; then
+              echo "Processing report: $REPORT"
+              # Parse failures and warnings
+              echo "🔴 Failures:"
+              jq -r '.audits | to_entries | .[] | select(.value.score < 0.9 or .value.numericValue > 0) | select(.value.scoreDisplayMode == "numeric" or .value.scoreDisplayMode == "binary") | select(.value.score < 0.9) | "- \(.key): \(.value.title) (Score: \(.value.score), Expected: >=0.9) [\(.value.description)]"' "$REPORT"
+              echo "🟡 Warnings:"
+              jq -r '.audits | to_entries | .[] | select(.value.score < 0.9 or .value.numericValue > 0) | select(.value.scoreDisplayMode == "informative" or .value.scoreDisplayMode == "notApplicable") | "- \(.key): \(.value.title) (Value: \(.value.numericValue // .value.score)) [\(.value.description)]"' "$REPORT"
+            else
+              echo "No valid report found in .lighthouseci/desktop/"
+            fi
+          else
+            echo "No Lighthouse reports generated."
+          fi
 
-      - name: Parse Lighthouse JSON - Desktop
-        run: |
-          DESKTOP_JSON=$(find .lighthouseci/desktop -name '*.report.json' | head -n 1)
-          if [ -f "$DESKTOP_JSON" ]; then
-            TOTAL_BYTES=$(jq '.audits["network-requests"].details.items | map(.transferSize) | add' "$DESKTOP_JSON")
-            echo "💻 Desktop total transferred: ${TOTAL_BYTES} bytes"
+          echo "📊 Mobile Lighthouse CI Summary"
+          echo "========================="
+          if [ -f ".lighthouseci/mobile/*.report.json" ]; then
+            # Find the JSON report (assuming one report for simplicity)
+            REPORT=$(ls .lighthouseci/mobile/*.report.json | head -n 1)
+            if [ -n "$REPORT" ]; then
+              echo "Processing report: $REPORT"
+              # Parse failures and warnings
+              echo "🔴 Failures:"
+              jq -r '.audits | to_entries | .[] | select(.value.score < 0.9 or .value.numericValue > 0) | select(.value.scoreDisplayMode == "numeric" or .value.scoreDisplayMode == "binary") | select(.value.score < 0.9) | "- \(.key): \(.value.title) (Score: \(.value.score), Expected: >=0.9) [\(.value.description)]"' "$REPORT"
+              echo "🟡 Warnings:"
+              jq -r '.audits | to_entries | .[] | select(.value.score < 0.9 or .value.numericValue > 0) | select(.value.scoreDisplayMode == "informative" or .value.scoreDisplayMode == "notApplicable") | "- \(.key): \(.value.title) (Value: \(.value.numericValue // .value.score)) [\(.value.description)]"' "$REPORT"
+            else
+              echo "No valid report found in .lighthouseci/mobile/"
+            fi
           else
-            echo "⚠️ Desktop Lighthouse JSON not found"
+            echo "No Lighthouse reports generated."
           fi
-    
-      - name: Parse Lighthouse JSON - Mobile
-        run: |
-          MOBILE_JSON=$(find .lighthouseci/mobile -name '*.report.json' | head -n 1)
-          if [ -f "$MOBILE_JSON" ]; then
-            TOTAL_BYTES=$(jq '.audits["network-requests"].details.items | map(.transferSize) | add' "$MOBILE_JSON")
-            echo "📱 Mobile total transferred: ${TOTAL_BYTES} bytes"
-          else
-            echo "⚠️ Mobile Lighthouse JSON not found"
-          fi
+        if: always()
 
       - name: Final validation & summary
         if: always()
