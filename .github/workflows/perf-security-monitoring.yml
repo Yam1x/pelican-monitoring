@@ -76,19 +76,16 @@ jobs:
           mkdir -p ./result
           mkdir -p ./errors
 
-      - name: Run JMeter - Home Page
+      - name: Run JMeter - Home Page (CLICK HERE TO SEE RESULTS)
         run: |
           mkdir -p ./report/home-page
           if ! jmeter -n -t ./tests/jmeter-tests/home-page.jmx \
-            -l ./report/home-page/home-page.jtl \
-            -Jjmeter.save.saveservice.output_format=xml \
-            -Jjmeter.save.saveservice.print_field_names=true \
-            -Jjmeter.save.saveservice.response_data.on_error=true \
-            -Jjmeter.save.saveservice.bytes=true \
-            -Jjmeter.save.saveservice.timestamp_format=ms; then
+            -l ./report/home-page/home-page.jtl; then
             echo "JMETER_FAIL_homePage=1" >> $GITHUB_ENV
             echo "❌ JMeter test failed: Home Page" >> ./errors/summary.txt
           fi
+
+          jmeter -g ./report/home-page/home-page.jtl -o ./report/home-page/html-report
 
           cp ./report/home-page/home-page.jtl ./result/home-page.jtl || true
 
@@ -97,19 +94,16 @@ jobs:
             echo "❌ Parser failed: Home Page" >> ./errors/summary.txt
           fi
 
-      - name: Run JMeter - Documents Page
+      - name: Run JMeter - Documents Page (CLICK HERE TO SEE RESULTS)
         run: |
           mkdir -p ./report/documents-page
           if ! jmeter -n -t ./tests/jmeter-tests/documents-page.jmx \
-            -l ./report/documents-page/documents-page.jtl \
-            -Jjmeter.save.saveservice.output_format=xml \
-            -Jjmeter.save.saveservice.print_field_names=true \
-            -Jjmeter.save.saveservice.response_data.on_error=true \
-            -Jjmeter.save.saveservice.bytes=true \
-            -Jjmeter.save.saveservice.timestamp_format=ms; then
+            -l ./report/documents-page/documents-page.jtl; then
             echo "JMETER_FAIL_documentsPage=1" >> $GITHUB_ENV
             echo "❌ JMeter test failed: Documents Page" >> ./errors/summary.txt
           fi
+
+          jmeter -g ./report/documents-page/documents-page.jtl -o ./report/documents-page/html-report
 
           cp ./report/documents-page/documents-page.jtl ./result/documents-page.jtl || true
 
@@ -118,19 +112,16 @@ jobs:
             echo "❌ Parser failed: Documents Page" >> ./errors/summary.txt
           fi
 
-      - name: Run JMeter - News Page
+      - name: Run JMeter - News Page (CLICK HERE TO SEE RESULTS)
         run: |
           mkdir -p ./report/news-page
           if ! jmeter -n -t ./tests/jmeter-tests/news-page.jmx \
-            -l ./report/news-page/news-page.jtl \
-            -Jjmeter.save.saveservice.output_format=xml \
-            -Jjmeter.save.saveservice.print_field_names=true \
-            -Jjmeter.save.saveservice.response_data.on_error=true \
-            -Jjmeter.save.saveservice.bytes=true \
-            -Jjmeter.save.saveservice.timestamp_format=ms; then
+            -l ./report/news-page/news-page.jtl; then
             echo "JMETER_FAIL_newsPage=1" >> $GITHUB_ENV
             echo "❌ JMeter test failed: News Page" >> ./errors/summary.txt
           fi
+
+          jmeter -g ./report/news-page/news-page.jtl -o ./report/news-page/html-report
 
           cp ./report/news-page/news-page.jtl ./result/news-page.jtl || true
 
@@ -138,6 +129,12 @@ jobs:
             echo "PARSER_FAIL_newsPage=1" >> $GITHUB_ENV
             echo "❌ Parser failed: News Page" >> ./errors/summary.txt
           fi
+
+      - name: Upload JMeter reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmeter-reports
+          path: ./report
 
       - name: Final validation & summary
         run: |
