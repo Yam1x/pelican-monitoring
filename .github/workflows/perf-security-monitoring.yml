@@ -90,8 +90,6 @@ jobs:
             echo "❌ JMeter test failed: Home Page" >> ./errors/summary.txt
           fi
 
-          jmeter -g ./report/home-page/home-page.jtl -o ./report/home-page/html-report
-
           cp ./report/home-page/home-page.jtl ./result/home-page.jtl || true
 
           if ! npx tsx scripts/home-page-jmeter-validator.ts; then
@@ -112,8 +110,6 @@ jobs:
             echo "JMETER_FAIL_documentsPage=1" >> $GITHUB_ENV
             echo "❌ JMeter test failed: Documents Page" >> ./errors/summary.txt
           fi
-
-          jmeter -g ./report/documents-page/documents-page.jtl -o ./report/documents-page/html-report
 
           cp ./report/documents-page/documents-page.jtl ./result/documents-page.jtl || true
 
@@ -136,20 +132,12 @@ jobs:
             echo "❌ JMeter test failed: News Page" >> ./errors/summary.txt
           fi
 
-          jmeter -g ./report/news-page/news-page.jtl -o ./report/news-page/html-report
-
           cp ./report/news-page/news-page.jtl ./result/news-page.jtl || true
 
           if ! npx tsx scripts/news-page-jmeter-validator.ts; then
             echo "PARSER_FAIL_newsPage=1" >> $GITHUB_ENV
             echo "❌ Parser failed: News Page" >> ./errors/summary.txt
           fi
-
-      - name: Upload JMeter reports
-        uses: actions/upload-artifact@v4
-        with:
-          name: jmeter-reports
-          path: ./report/**/
 
       - name: Final validation & summary
         run: |
