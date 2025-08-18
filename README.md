@@ -43,7 +43,7 @@
 - **Что проверяет:** Проводит аудит важных показателей отрисовки контента на странице, безопасность, доступность.   
 - **Метрики Производительности (из CWV):**  
   - **[First Contentful Paint (FCP)](https://developer.chrome.com/docs/lighthouse/performance/first-contentful-paint?hl=ru):** Время до первого рендера контента. Warn: ≤1800 мс, Error: ≤3000 мс. 
-  - **[Largest Contentful Paint (LCP)](https://developer.chrome.com/docs/lighthouse/performance/largest-contentful-paint?hl=ru):** Время загрузки основного контента (например, hero-изображение). Warn: ≤2400 мс, Error: ≤4000 мс.
+  - **[Largest Contentful Paint (LCP)](https://developer.chrome.com/docs/lighthouse/performance/lighthouse-largest-contentful-paint?hl=ru):** Время загрузки основного контента (например, hero-изображение). Warn: ≤2400 мс, Error: ≤4000 мс.
   - **[Speed Index (SI)](https://developer.chrome.com/docs/lighthouse/performance/speed-index?hl=ru):** Индекс скорости измеряет, насколько быстро контент отображается визуально во время загрузки страницы. Warn: ≤2300 мс, Error: ≤5000 мс. 
   - **[Total Blocking Time (TBT)](https://developer.chrome.com/docs/lighthouse/performance/lighthouse-total-blocking-time?hl=ru):** TBT измеряет общее время, в течение которого страница не может реагировать на вводимые пользователем данные, такие как щелчки мыши, касания экрана или нажатия клавиатуры.
    Warn: ≤150 мс, Error: ≤350 мс.
