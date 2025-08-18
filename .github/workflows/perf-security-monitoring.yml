@@ -80,7 +80,12 @@ jobs:
         run: |
           mkdir -p ./report/home-page
           if ! jmeter -n -t ./tests/jmeter-tests/home-page.jmx \
-            -l ./report/home-page/home-page.jtl; then
+            -l ./report/home-page/home-page.jtl \
+            -Jjmeter.save.saveservice.output_format=xml \ 
+            -Jjmeter.save.saveservice.print_field_names=true \ 
+            -Jjmeter.save.saveservice.response_data.on_error=true \ 
+            -Jjmeter.save.saveservice.bytes=true \ 
+            -Jjmeter.save.saveservice.timestamp_format=ms; then
             echo "JMETER_FAIL_homePage=1" >> $GITHUB_ENV
             echo "❌ JMeter test failed: Home Page" >> ./errors/summary.txt
           fi
@@ -98,7 +103,12 @@ jobs:
         run: |
           mkdir -p ./report/documents-page
           if ! jmeter -n -t ./tests/jmeter-tests/documents-page.jmx \
-            -l ./report/documents-page/documents-page.jtl; then
+            -l ./report/documents-page/documents-page.jtl \ 
+            -Jjmeter.save.saveservice.output_format=xml \ 
+            -Jjmeter.save.saveservice.print_field_names=true \ 
+            -Jjmeter.save.saveservice.response_data.on_error=true \ 
+            -Jjmeter.save.saveservice.bytes=true \ 
+            -Jjmeter.save.saveservice.timestamp_format=ms; then
             echo "JMETER_FAIL_documentsPage=1" >> $GITHUB_ENV
             echo "❌ JMeter test failed: Documents Page" >> ./errors/summary.txt
           fi
@@ -116,7 +126,12 @@ jobs:
         run: |
           mkdir -p ./report/news-page
           if ! jmeter -n -t ./tests/jmeter-tests/news-page.jmx \
-            -l ./report/news-page/news-page.jtl; then
+            -l ./report/news-page/news-page.jtl \
+            -Jjmeter.save.saveservice.output_format=xml \ 
+            -Jjmeter.save.saveservice.print_field_names=true \ 
+            -Jjmeter.save.saveservice.response_data.on_error=true \ 
+            -Jjmeter.save.saveservice.bytes=true \ 
+            -Jjmeter.save.saveservice.timestamp_format=ms; then
             echo "JMETER_FAIL_newsPage=1" >> $GITHUB_ENV
             echo "❌ JMeter test failed: News Page" >> ./errors/summary.txt
           fi
