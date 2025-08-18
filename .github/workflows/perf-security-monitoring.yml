@@ -149,6 +149,12 @@ jobs:
             echo "PARSER_FAIL_newsPage=1" >> $GITHUB_ENV
             echo "❌ Parser failed: News Page" >> ./errors/summary.txt
           fi
+      
+      - name: Upload JMeter reports
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmeter-reports
+          path: ./report/**
 
       - name: Final validation & summary
         run: |
