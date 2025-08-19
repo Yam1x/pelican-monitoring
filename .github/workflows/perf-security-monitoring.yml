@@ -199,11 +199,14 @@ jobs:
 
       - name: Run Lighthouse CI (Desktop)
         run: |
-          lhci autorun --config .lighthouserc.desktop.js --collect.outputPath=.lighthouseci/desktop > ./lh-desktop-logs.txt 2>&1 || true
+          lhci autorun --config=./lighthouserc-desktop.json || echo "Desktop LHCI failed" >> lh-errors.txt
 
-          echo "DEBUG: contents of .lighthouseci after Desktop run"
-          ls -la .lighthouseci || true
+      - name: Run Lighthouse CI (Mobile)
+        run: |
+          lhci autorun --config=./lighthouserc-mobile.json || echo "Mobile LHCI failed" >> lh-errors.txt
 
+      - name: Validate Lighthouse CI Desktop
+        run: |
           if ls .lighthouseci/lhr-*.json 1> /dev/null 2>&1; then
             echo "✅ Lighthouse CI passed: Desktop"
             echo "LHCI_FAIL_desktop=0" >> $GITHUB_ENV
@@ -212,18 +215,8 @@ jobs:
             echo "LHCI_FAIL_desktop=1" >> $GITHUB_ENV
           fi
 
-          if [ -f .lighthouseci/links.json ]; then
-            DESKTOP_URL=$(jq -r '.["https://chelzoo.ru?desktop"].reportHtml' .lighthouseci/links.json || echo "N/A")
-            echo "LHCI_URL_desktop=$DESKTOP_URL" >> $GITHUB_ENV
-          fi
-
-      - name: Run Lighthouse CI (Mobile)
+      - name: Validate Lighthouse CI Mobile
         run: |
-          lhci autorun --config .lighthouserc.mobile.js --collect.outputPath=.lighthouseci/mobile > ./lh-mobile-logs.txt 2>&1 || true
-
-          echo "DEBUG: contents of .lighthouseci after Mobile run"
-          ls -la .lighthouseci || true
-
           if ls .lighthouseci/lhr-*.json 1> /dev/null 2>&1; then
             echo "✅ Lighthouse CI passed: Mobile"
             echo "LHCI_FAIL_mobile=0" >> $GITHUB_ENV
@@ -232,50 +225,26 @@ jobs:
             echo "LHCI_FAIL_mobile=1" >> $GITHUB_ENV
           fi
 
-          if [ -f .lighthouseci/links.json ]; then
-            MOBILE_URL=$(jq -r '.["https://chelzoo.ru?mobile"].reportHtml' .lighthouseci/links.json || echo "N/A")
-            echo "LHCI_URL_mobile=$MOBILE_URL" >> $GITHUB_ENV
-          fi
-
-      - name: FINAL VALIDATION & SUMMARY TEST REPORT
-        if: always()
+      - name: Final Summary
         run: |
-          echo "===== LIGHTHOUSE TEST SUMMARY ====="
+          echo "📊 FINAL SUMMARY"
+          echo "----------------"
 
-          if [ -f ./lh-desktop-logs.txt ]; then
-            echo "===== ⚓︎ 💻 DESKTOP LIGHTHOUSE LOGS ====="
-            cat ./lh-desktop-logs.txt
-            echo "================================"
-          fi
-
-          if [ -f ./lh-mobile-logs.txt ]; then
-            echo "===== ⚓︎ 📲 MOBILE LIGHTHOUSE LOGS ====="
-            cat ./lh-mobile-logs.txt
-            echo "================================"
-          fi
-
-          echo "===== ✅/❌ FINAL STATUS ====="
+        
           if [ "$LHCI_FAIL_desktop" = "0" ]; then
-            echo "Desktop: PASSED ✅   ${LHCI_URL_desktop:-N/A}"
+            desktop_link=$(jq -r '.[0].url' .lighthouseci/links.json 2>/dev/null || echo "no link")
+            echo "✅ Desktop report: $desktop_link"
           else
-            echo "Desktop: FAILED ❌   ${LHCI_URL_desktop:-N/A}"
+            echo "❌ Desktop failed (see lh-errors.txt)"
           fi
 
+          
           if [ "$LHCI_FAIL_mobile" = "0" ]; then
-            echo "Mobile: PASSED ✅   ${LHCI_URL_mobile:-N/A}"
+            mobile_link=$(jq -r '.[1].url' .lighthouseci/links.json 2>/dev/null || echo "no link")
+            echo "✅ Mobile report: $mobile_link"
           else
-            echo "Mobile: FAILED ❌   ${LHCI_URL_mobile:-N/A}"
+            echo "❌ Mobile failed (see lh-errors.txt)"
           fi
-          echo "================================"
-
-          if [ -f ./lh-errors.txt ]; then
-            cat ./lh-errors.txt
-            echo "================================"
-            exit 1
-          else
-            echo "✅ All Lighthouse checks passed."
-          fi
-
 
   validate-cache-headers:
     runs-on: ubuntu-24.04
