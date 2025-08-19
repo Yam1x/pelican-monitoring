@@ -200,17 +200,35 @@ jobs:
       - name: Run Lighthouse CI (Desktop) (CLICK HERE TO SEE RESULTS)
         run: |
           lhci autorun --config .lighthouserc.desktop.js --collect.outputPath=.lighthouseci/desktop || true
-          if [ ! -f ".lighthouseci/desktop/*.report.json" ]; then
-            echo "❌ Lighthouse CI failed: Desktop" >> ./lh-errors.txt
+
+          ASSERT_FILE=".lighthouseci/desktop/assertion-results.json"
+
+          if [ ! -f "$ASSERT_FILE" ]; then
+            echo "❌ Lighthouse CI failed: Desktop (no assertion-results.json)" >> ./lh-errors.txt
             echo "LHCI_FAIL_desktop=1" >> $GITHUB_ENV
+          else
+            CONTENT=$(cat "$ASSERT_FILE" | tr -d '[:space:]')
+            if [ "$CONTENT" != "[]" ]; then
+              echo "❌ Lighthouse CI failed: Desktop (assertions failed)" >> ./lh-errors.txt
+              echo "LHCI_FAIL_desktop=1" >> $GITHUB_ENV
+            fi
           fi
 
       - name: Run Lighthouse CI (Mobile) (CLICK HERE TO SEE RESULTS)
         run: |
           lhci autorun --config .lighthouserc.mobile.js --collect.outputPath=.lighthouseci/mobile || true
-          if [ ! -f ".lighthouseci/mobile/*.report.json" ]; then
-            echo "❌ Lighthouse CI failed: Mobile" >> ./lh-errors.txt
+
+          ASSERT_FILE=".lighthouseci/mobile/assertion-results.json"
+
+          if [ ! -f "$ASSERT_FILE" ]; then
+            echo "❌ Lighthouse CI failed: Mobile (no assertion-results.json)" >> ./lh-errors.txt
             echo "LHCI_FAIL_mobile=1" >> $GITHUB_ENV
+          else
+            CONTENT=$(cat "$ASSERT_FILE" | tr -d '[:space:]')
+            if [ "$CONTENT" != "[]" ]; then
+              echo "❌ Lighthouse CI failed: Mobile (assertions failed)" >> ./lh-errors.txt
+              echo "LHCI_FAIL_mobile=1" >> $GITHUB_ENV
+            fi
           fi
 
       - name: Final validation & summary
