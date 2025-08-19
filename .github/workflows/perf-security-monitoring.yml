@@ -199,9 +199,9 @@ jobs:
 
       - name: Run Lighthouse CI (Desktop) (CLICK HERE TO SEE RESULTS)
         run: |
-          lhci autorun --config .lighthouserc.desktop.js --collect.outputPath="./.lighthouseci/desktop" || true
+          lhci autorun --config .lighthouserc.desktop.js --collect.outputPath="./.lighthouseci" || true
 
-          ASSERT_FILE=".lighthouseci/desktop/assertion-results.json"
+          ASSERT_FILE=".lighthouseci/assertion-results.json"
 
           if [ ! -f "$ASSERT_FILE" ]; then
             echo "❌ Lighthouse CI failed: Desktop (no assertion-results.json)" >> ./lh-errors.txt
@@ -216,9 +216,9 @@ jobs:
 
       - name: Run Lighthouse CI (Mobile) (CLICK HERE TO SEE RESULTS)
         run: |
-          lhci autorun --config .lighthouserc.mobile.js --collect.outputPath="./.lighthouseci/mobile" || true
+          lhci autorun --config .lighthouserc.mobile.js --collect.outputPath="./.lighthouseci" || true
 
-          ASSERT_FILE=".lighthouseci/mobile/assertion-results.json"
+          ASSERT_FILE=".lighthouseci/assertion-results.json"
 
           if [ ! -f "$ASSERT_FILE" ]; then
             echo "❌ Lighthouse CI failed: Mobile (no assertion-results.json)" >> ./lh-errors.txt
