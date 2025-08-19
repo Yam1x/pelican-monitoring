@@ -199,37 +199,43 @@ jobs:
 
       - name: Run Lighthouse CI (Desktop)
         run: |
-          # Redirect stdout and stderr to a log file to capture all output
           lhci autorun --config .lighthouserc.desktop.js --collect.outputPath=.lighthouseci/desktop > ./lh-desktop-logs.txt 2>&1 || true
-          if [ ! -f ".lighthouseci/desktop/*.report.json" ]; then
+          
+          if ls .lighthouseci/desktop/*.report.json 1> /dev/null 2>&1; then
+            echo "✅ Lighthouse CI passed: Desktop"
+          else
             echo "❌ Lighthouse CI failed: Desktop" >> ./lh-errors.txt
             echo "LHCI_FAIL_desktop=1" >> $GITHUB_ENV
           fi
 
       - name: Run Lighthouse CI (Mobile)
         run: |
-          # Redirect stdout and stderr to a log file to capture all output
           lhci autorun --config .lighthouserc.mobile.js --collect.outputPath=.lighthouseci/mobile > ./lh-mobile-logs.txt 2>&1 || true
-          if [ ! -f ".lighthouseci/mobile/*.report.json" ]; then
+
+          if ls .lighthouseci/mobile/*.report.json 1> /dev/null 2>&1; then
+            echo "✅ Lighthouse CI passed: Mobile"
+          else
             echo "❌ Lighthouse CI failed: Mobile" >> ./lh-errors.txt
             echo "LHCI_FAIL_mobile=1" >> $GITHUB_ENV
           fi
+
       - name: FINAL VALIDATION & SUMMARY TEST REPORT
         if: always()
         run: |
           echo "===== LIGHTHOUSE TEST SUMMARY ====="
-          # Always display the captured logs from the Desktop run
+
           if [ -f ./lh-desktop-logs.txt ]; then
             echo "===== ⚓︎ 💻 DESKTOP LIGHTHOUSE LOGS ====="
             cat ./lh-desktop-logs.txt
             echo "================================"
           fi
-          # Always display the captured logs from the Mobile run
+
           if [ -f ./lh-mobile-logs.txt ]; then
             echo "===== ⚓︎ 📲 MOBILE LIGHTHOUSE LOGS ====="
             cat ./lh-mobile-logs.txt
             echo "================================"
           fi
+
           if [ -f ./lh-errors.txt ]; then
             cat ./lh-errors.txt
             echo "================================"
@@ -237,6 +243,7 @@ jobs:
           else
             echo "✅ All Lighthouse checks passed."
           fi
+
 
   validate-cache-headers:
     runs-on: ubuntu-24.04
