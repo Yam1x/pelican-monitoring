@@ -199,7 +199,7 @@ jobs:
 
       - name: Run Lighthouse CI (Desktop) (CLICK HERE TO SEE RESULTS)
         run: |
-          lhci autorun --config .lighthouserc.desktop.js --collect.outputPath=.lighthouseci/desktop || true
+          lhci autorun --config .lighthouserc.desktop.js --collect.outputPath=./.lighthouseci/desktop || true
 
           ASSERT_FILE=".lighthouseci/desktop/assertion-results.json"
 
@@ -216,7 +216,7 @@ jobs:
 
       - name: Run Lighthouse CI (Mobile) (CLICK HERE TO SEE RESULTS)
         run: |
-          lhci autorun --config .lighthouserc.mobile.js --collect.outputPath=.lighthouseci/mobile || true
+          lhci autorun --config .lighthouserc.mobile.js --collect.outputPath=./.lighthouseci/mobile || true
 
           ASSERT_FILE=".lighthouseci/mobile/assertion-results.json"
 
