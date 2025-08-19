@@ -178,75 +178,75 @@ jobs:
             echo "✅ All JMeter tests and parsers passed."
           fi
 
-    llighthouse:
-      needs: jmeter-tests
-      if: always()
-      runs-on: ubuntu-24.04
-      timeout-minutes: 5
-      steps:
-        - uses: actions/checkout@v4
+  lighthouse:
+    needs: jmeter-tests
+    if: always()
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
 
-        - name: Set up Node.js
-          uses: actions/setup-node@v4
-          with:
-            node-version: 20
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-        - name: Install Lighthouse CI
-          run: npm install -g @lhci/cli@0.15.x
+      - name: Install Lighthouse CI
+        run: npm install -g @lhci/cli@0.15.x
 
-        - name: Create Lighthouse directory
-          run: mkdir -p .lighthouseci
+      - name: Create Lighthouse directory
+        run: mkdir -p .lighthouseci
 
-        - name: Run Lighthouse CI (Desktop)
-          run: |
-            lhci autorun --config .lighthouserc.desktop.js --collect.outputPath=.lighthouseci/desktop > ./lh-desktop-logs.txt 2>&1 || true
+      - name: Run Lighthouse CI (Desktop)
+        run: |
+          lhci autorun --config .lighthouserc.desktop.js --collect.outputPath=.lighthouseci/desktop > ./lh-desktop-logs.txt 2>&1 || true
 
-        - name: Run Lighthouse CI (Mobile)
-          run: |
-            lhci autorun --config .lighthouserc.mobile.js --collect.outputPath=.lighthouseci/mobile > ./lh-mobile-logs.txt 2>&1 || true
+      - name: Run Lighthouse CI (Mobile)
+        run: |
+          lhci autorun --config .lighthouserc.mobile.js --collect.outputPath=.lighthouseci/mobile > ./lh-mobile-logs.txt 2>&1 || true
 
-        - name: Validate Lighthouse CI Results (Desktop)
-          id: validate_desktop
-          run: |
-            npx ts-node ./scripts/lighthouse-desktop-validator.ts
+      - name: Validate Lighthouse CI Results (Desktop)
+        id: validate_desktop
+        run: |
+          npx ts-node ./scripts/lighthouse-desktop-validator.ts
 
-        - name: Validate Lighthouse CI Results (Mobile)
-          id: validate_mobile
-          run: |
-            npx ts-node ./scripts/lighthouse-mobile-validator.ts
+      - name: Validate Lighthouse CI Results (Mobile)
+        id: validate_mobile
+        run: |
+          npx ts-node ./scripts/lighthouse-mobile-validator.ts
 
-        - name: FINAL VALIDATION & SUMMARY TEST REPORT
-          if: always()
-          run: |
-            echo "===== LIGHTHOUSE TEST SUMMARY ====="
+      - name: FINAL VALIDATION & SUMMARY TEST REPORT
+        if: always()
+        run: |
+          echo "===== LIGHTHOUSE TEST SUMMARY ====="
 
-            echo "===== ⚓︎ 💻 DESKTOP LOGS ====="
-            cat ./lh-desktop-logs.txt || echo "Нет логов Desktop"
-            echo "================================"
+          echo "===== ⚓︎ 💻 DESKTOP LOGS ====="
+          cat ./lh-desktop-logs.txt || echo "Нет логов Desktop"
+          echo "================================"
 
-            echo "===== ⚓︎ 📲 MOBILE LOGS ====="
-            cat ./lh-mobile-logs.txt || echo "Нет логов Mobile"
-            echo "================================"
+          echo "===== ⚓︎ 📲 MOBILE LOGS ====="
+          cat ./lh-mobile-logs.txt || echo "Нет логов Mobile"
+          echo "================================"
 
-            echo "===== ✅/❌ FINAL STATUS ====="
-            if [ "${{ steps.validate_desktop.outcome }}" = "success" ]; then
-              echo "Desktop: PASSED ✅"
-            else
-              echo "Desktop: FAILED ❌"
-            fi
+          echo "===== ✅/❌ FINAL STATUS ====="
+          if [ "${{ steps.validate_desktop.outcome }}" = "success" ]; then
+            echo "Desktop: PASSED ✅"
+          else
+            echo "Desktop: FAILED ❌"
+          fi
 
-            if [ "${{ steps.validate_mobile.outcome }}" = "success" ]; then
-              echo "Mobile: PASSED ✅"
-            else
-              echo "Mobile: FAILED ❌"
-            fi
-            echo "================================"
+          if [ "${{ steps.validate_mobile.outcome }}" = "success" ]; then
+            echo "Mobile: PASSED ✅"
+          else
+            echo "Mobile: FAILED ❌"
+          fi
+          echo "================================"
 
-            if [ "${{ steps.validate_desktop.outcome }}" != "success" ] || [ "${{ steps.validate_mobile.outcome }}" != "success" ]; then
-              exit 1
-            else
-              echo "✅ All Lighthouse checks passed."
-            fi
+          if [ "${{ steps.validate_desktop.outcome }}" != "success" ] || [ "${{ steps.validate_mobile.outcome }}" != "success" ]; then
+            exit 1
+          else
+            echo "✅ All Lighthouse checks passed."
+          fi
 
   validate-cache-headers:
     runs-on: ubuntu-24.04
