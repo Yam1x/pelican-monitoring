@@ -87,7 +87,7 @@ jobs:
             -Jjmeter.save.saveservice.bytes=true \
             -Jjmeter.save.saveservice.timestamp_format=ms; then
             echo "JMETER_FAIL_homePage=1" >> $GITHUB_ENV
-            echo "❌ JMeter test failed: Home Page" >> ./errors/summary.txt
+            echo "❌ JMeter test execution failed: Home Page" >> ./errors/summary.txt
           fi
 
           cp ./report/home-page/home-page.jtl ./result/home-page.jtl || true
@@ -114,7 +114,7 @@ jobs:
             -Jjmeter.save.saveservice.assertion_results_failure_message=true \
             -Jjmeter.save.saveservice.timestamp_format=ms; then
             echo "JMETER_FAIL_documentsPage=1" >> $GITHUB_ENV
-            echo "❌ JMeter test failed: Documents Page" >> ./errors/summary.txt
+            echo "❌ JMeter test execution failed: Documents Page" >> ./errors/summary.txt
           fi
 
           cp ./report/documents-page/documents-page.jtl ./result/documents-page.jtl || true
@@ -130,30 +130,45 @@ jobs:
             -Jjmeter.save.saveservice.bytes=true \
             -Jjmeter.save.saveservice.timestamp_format=ms; then
             echo "JMETER_FAIL_newsPage=1" >> $GITHUB_ENV
-            echo "❌ JMeter test failed: News Page" >> ./errors/summary.txt
+            echo "❌ JMeter test execution failed: News Page" >> ./errors/summary.txt
           fi
 
           cp ./report/news-page/news-page.jtl ./result/news-page.jtl || true
       
-      - name: Validate JMeter reports (CLICK HERE TO SEE RESULTS)
+      # - name: Validate JMeter reports (CLICK HERE TO SEE RESULTS)
+      #   run: |
+      #     if ! npx tsx scripts/home-page-jmeter-validator.ts; then
+      #       echo "PARSER_FAIL_homePage=1" >> $GITHUB_ENV
+      #       echo "❌ Load Test Results are FAILED: Home Page" >> ./errors/summary.txt
+      #     fi
+
+      #     if ! npx tsx scripts/documents-page-jmeter-validator.ts; then
+      #       echo "PARSER_FAIL_documentsPage=1" >> $GITHUB_ENV
+      #       echo "❌ Load Test Results are FAILED: Documents Page" >> ./errors/summary.txt
+      #     fi
+
+      #     if ! npx tsx scripts/news-page-jmeter-validator.ts; then
+      #       echo "PARSER_FAIL_newsPage=1" >> $GITHUB_ENV
+      #       echo "❌ Load Test Results are FAILED: News Page" >> ./errors/summary.txt
+      #     fi
+
+      - name: Final validation & summary 
         run: |
           if ! npx tsx scripts/home-page-jmeter-validator.ts; then
             echo "PARSER_FAIL_homePage=1" >> $GITHUB_ENV
-            echo "❌ Parser failed: Home Page" >> ./errors/summary.txt
+            echo "❌ Load Test Results are FAILED: Home Page" >> ./errors/summary.txt
           fi
 
           if ! npx tsx scripts/documents-page-jmeter-validator.ts; then
             echo "PARSER_FAIL_documentsPage=1" >> $GITHUB_ENV
-            echo "❌ Parser failed: Documents Page" >> ./errors/summary.txt
+            echo "❌ Load Test Results are FAILED: Documents Page" >> ./errors/summary.txt
           fi
 
           if ! npx tsx scripts/news-page-jmeter-validator.ts; then
             echo "PARSER_FAIL_newsPage=1" >> $GITHUB_ENV
-            echo "❌ Parser failed: News Page" >> ./errors/summary.txt
+            echo "❌ Load Test Results are FAILED: News Page" >> ./errors/summary.txt
           fi
 
-      - name: Final validation & summary
-        run: |
           echo "===== TEST SUMMARY ====="
           if [ -f ./errors/summary.txt ]; then
             cat ./errors/summary.txt
@@ -182,7 +197,7 @@ jobs:
       - name: Create Lighthouse directory
         run: mkdir -p .lighthouseci
 
-      - name: Run Lighthouse CI (Desktop)
+      - name: Run Lighthouse CI (Desktop) (CLICK HERE TO SEE RESULTS)
         run: |
           lhci autorun --config .lighthouserc.desktop.js --collect.outputPath=.lighthouseci/desktop || true
           if [ ! -f ".lighthouseci/desktop/*.report.json" ]; then
@@ -190,7 +205,7 @@ jobs:
             echo "LHCI_FAIL_desktop=1" >> $GITHUB_ENV
           fi
 
-      - name: Run Lighthouse CI (Mobile)
+      - name: Run Lighthouse CI (Mobile) (CLICK HERE TO SEE RESULTS)
         run: |
           lhci autorun --config .lighthouserc.mobile.js --collect.outputPath=.lighthouseci/mobile || true
           if [ ! -f ".lighthouseci/mobile/*.report.json" ]; then
