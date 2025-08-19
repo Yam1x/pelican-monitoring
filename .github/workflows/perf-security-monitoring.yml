@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 2
     steps:
-      - name: Validate robots.txt
+      - name: Validate robots.txt & TEST SUMMARY
         id: robots_txt_validation
         run: |
           echo "Fetching robots.txt..."
@@ -152,7 +152,7 @@ jobs:
       #       echo "❌ Load Test Results are FAILED: News Page" >> ./errors/summary.txt
       #     fi
 
-      - name: Final validation & summary 
+      - name: FINAL VALIDATION & SUMMARY TEST REPORT 
         run: |
           if ! npx tsx scripts/home-page-jmeter-validator.ts; then
             echo "PARSER_FAIL_homePage=1" >> $GITHUB_ENV
@@ -169,7 +169,7 @@ jobs:
             echo "❌ Load Test Results are FAILED: News Page" >> ./errors/summary.txt
           fi
 
-          echo "===== TEST SUMMARY ====="
+          echo "===== APACHE JMETER LOAD TESTS SUMMARY ====="
           if [ -f ./errors/summary.txt ]; then
             cat ./errors/summary.txt
             echo "========================"
