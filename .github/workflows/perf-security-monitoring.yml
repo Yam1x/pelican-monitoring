@@ -214,19 +214,19 @@ jobs:
             echo "❌ Lighthouse CI failed: Mobile" >> ./lh-errors.txt
             echo "LHCI_FAIL_mobile=1" >> $GITHUB_ENV
           fi
-      - name: Final validation & summary
+      - name: FINAL VALIDATION & SUMMARY TEST REPORT
         if: always()
         run: |
           echo "===== LIGHTHOUSE TEST SUMMARY ====="
           # Always display the captured logs from the Desktop run
           if [ -f ./lh-desktop-logs.txt ]; then
-            echo "===== Desktop Lighthouse Logs ====="
+            echo "===== ⚓︎ DESKTOP LIGHTHOUSE LOGS ====="
             cat ./lh-desktop-logs.txt
             echo "================================"
           fi
           # Always display the captured logs from the Mobile run
           if [ -f ./lh-mobile-logs.txt ]; then
-            echo "===== Mobile Lighthouse Logs ====="
+            echo "===== ⚓︎ MOBILE LIGHTHOUSE LOGS ====="
             cat ./lh-mobile-logs.txt
             echo "================================"
           fi
@@ -238,32 +238,44 @@ jobs:
             echo "✅ All Lighthouse checks passed."
           fi
 
-  validate-cache-headers:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
+validate-cache-headers:
+  runs-on: ubuntu-24.04
+  timeout-minutes: 10
+  steps:
+    - uses: actions/checkout@v4
+    
+    - name: Install Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
       
-      - name: Install Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          
-      - name: Install dependencies
-        run: npm ci
-        
-      - name: Install Playwright with browsers
-        run: npx playwright install --with-deps chromium
-        
-      - name: Run Playwright test
-        run: npx playwright test tests/playwright-tests/cache-checker.spec.ts --reporter=list
-        
-      - name: Upload results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: cache-validation-results
-          path: |
-            results.json
-            playwright-report/
+    - name: Install Playwright with browsers
+      run: npx playwright install --with-deps chromium
+      
+    - name: Run Playwright test
+      run: npx playwright test tests/playwright-tests/cache-checker.spec.ts --reporter=list > test-logs.txt 2>&1
+      
+    - name: Upload results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: cache-validation-results
+        path: |
+          results.json
+          playwright-report/
+          test-logs.txt  # Optional: Include the log file in artifacts for download/archive
+    
+    - name: FINAL VALIDATION & SUMMARY TEST REPORT
+      if: always()
+      run: |
+        if [ -f test-logs.txt ]; then
+          echo "===== Playwright Test Logs ====="
+          cat test-logs.txt
+          echo "================================"
+        else
+          echo "No test logs found."
+        fi
