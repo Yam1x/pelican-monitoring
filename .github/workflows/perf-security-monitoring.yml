@@ -204,12 +204,17 @@ jobs:
           echo "DEBUG: contents of .lighthouseci after Desktop run"
           ls -la .lighthouseci || true
 
-          if ls .lighthouseci/*.report.json 1> /dev/null 2>&1; then
+          if ls .lighthouseci/lhr-*.json 1> /dev/null 2>&1; then
             echo "✅ Lighthouse CI passed: Desktop"
             echo "LHCI_FAIL_desktop=0" >> $GITHUB_ENV
           else
             echo "❌ Lighthouse CI failed: Desktop" >> ./lh-errors.txt
             echo "LHCI_FAIL_desktop=1" >> $GITHUB_ENV
+          fi
+
+          if [ -f .lighthouseci/links.json ]; then
+            DESKTOP_URL=$(jq -r '.["https://chelzoo.ru?desktop"].reportHtml' .lighthouseci/links.json || echo "N/A")
+            echo "LHCI_URL_desktop=$DESKTOP_URL" >> $GITHUB_ENV
           fi
 
       - name: Run Lighthouse CI (Mobile)
@@ -219,12 +224,17 @@ jobs:
           echo "DEBUG: contents of .lighthouseci after Mobile run"
           ls -la .lighthouseci || true
 
-          if ls .lighthouseci/*.report.json 1> /dev/null 2>&1; then
+          if ls .lighthouseci/lhr-*.json 1> /dev/null 2>&1; then
             echo "✅ Lighthouse CI passed: Mobile"
             echo "LHCI_FAIL_mobile=0" >> $GITHUB_ENV
           else
             echo "❌ Lighthouse CI failed: Mobile" >> ./lh-errors.txt
             echo "LHCI_FAIL_mobile=1" >> $GITHUB_ENV
+          fi
+
+          if [ -f .lighthouseci/links.json ]; then
+            MOBILE_URL=$(jq -r '.["https://chelzoo.ru?mobile"].reportHtml' .lighthouseci/links.json || echo "N/A")
+            echo "LHCI_URL_mobile=$MOBILE_URL" >> $GITHUB_ENV
           fi
 
       - name: FINAL VALIDATION & SUMMARY TEST REPORT
@@ -246,15 +256,15 @@ jobs:
 
           echo "===== ✅/❌ FINAL STATUS ====="
           if [ "$LHCI_FAIL_desktop" = "0" ]; then
-            echo "Desktop: PASSED ✅"
+            echo "Desktop: PASSED ✅   ${LHCI_URL_desktop:-N/A}"
           else
-            echo "Desktop: FAILED ❌"
+            echo "Desktop: FAILED ❌   ${LHCI_URL_desktop:-N/A}"
           fi
 
           if [ "$LHCI_FAIL_mobile" = "0" ]; then
-            echo "Mobile: PASSED ✅"
+            echo "Mobile: PASSED ✅   ${LHCI_URL_mobile:-N/A}"
           else
-            echo "Mobile: FAILED ❌"
+            echo "Mobile: FAILED ❌   ${LHCI_URL_mobile:-N/A}"
           fi
           echo "================================"
 
@@ -265,7 +275,6 @@ jobs:
           else
             echo "✅ All Lighthouse checks passed."
           fi
-
 
 
   validate-cache-headers:
