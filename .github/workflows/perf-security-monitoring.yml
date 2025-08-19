@@ -197,26 +197,39 @@ jobs:
       - name: Create Lighthouse directory
         run: mkdir -p .lighthouseci
 
-      - name: Run Lighthouse CI (Desktop) (CLICK HERE TO SEE RESULTS)
+      - name: Run Lighthouse CI (Desktop)
         run: |
-          lhci autorun --config .lighthouserc.desktop.js --collect.outputPath=.lighthouseci/desktop || true
+          # Redirect stdout and stderr to a log file to capture all output
+          lhci autorun --config .lighthouserc.desktop.js --collect.outputPath=.lighthouseci/desktop > ./lh-desktop-logs.txt 2>&1 || true
           if [ ! -f ".lighthouseci/desktop/*.report.json" ]; then
             echo "❌ Lighthouse CI failed: Desktop" >> ./lh-errors.txt
             echo "LHCI_FAIL_desktop=1" >> $GITHUB_ENV
           fi
 
-      - name: Run Lighthouse CI (Mobile) (CLICK HERE TO SEE RESULTS)
+      - name: Run Lighthouse CI (Mobile)
         run: |
-          lhci autorun --config .lighthouserc.mobile.js --collect.outputPath=.lighthouseci/mobile || true
+          # Redirect stdout and stderr to a log file to capture all output
+          lhci autorun --config .lighthouserc.mobile.js --collect.outputPath=.lighthouseci/mobile > ./lh-mobile-logs.txt 2>&1 || true
           if [ ! -f ".lighthouseci/mobile/*.report.json" ]; then
             echo "❌ Lighthouse CI failed: Mobile" >> ./lh-errors.txt
             echo "LHCI_FAIL_mobile=1" >> $GITHUB_ENV
           fi
-
       - name: Final validation & summary
         if: always()
         run: |
           echo "===== LIGHTHOUSE TEST SUMMARY ====="
+          # Always display the captured logs from the Desktop run
+          if [ -f ./lh-desktop-logs.txt ]; then
+            echo "===== Desktop Lighthouse Logs ====="
+            cat ./lh-desktop-logs.txt
+            echo "================================"
+          fi
+          # Always display the captured logs from the Mobile run
+          if [ -f ./lh-mobile-logs.txt ]; then
+            echo "===== Mobile Lighthouse Logs ====="
+            cat ./lh-mobile-logs.txt
+            echo "================================"
+          fi
           if [ -f ./lh-errors.txt ]; then
             cat ./lh-errors.txt
             echo "================================"
