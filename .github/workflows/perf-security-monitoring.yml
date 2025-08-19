@@ -200,9 +200,13 @@ jobs:
       - name: Run Lighthouse CI (Desktop)
         run: |
           lhci autorun --config .lighthouserc.desktop.js --collect.outputPath=.lighthouseci/desktop > ./lh-desktop-logs.txt 2>&1 || true
-          
-          if ls .lighthouseci/desktop/*.report.json 1> /dev/null 2>&1; then
+
+          echo "DEBUG: contents of .lighthouseci after Desktop run"
+          ls -la .lighthouseci || true
+
+          if ls .lighthouseci/*.report.json 1> /dev/null 2>&1; then
             echo "✅ Lighthouse CI passed: Desktop"
+            echo "LHCI_FAIL_desktop=0" >> $GITHUB_ENV
           else
             echo "❌ Lighthouse CI failed: Desktop" >> ./lh-errors.txt
             echo "LHCI_FAIL_desktop=1" >> $GITHUB_ENV
@@ -212,8 +216,12 @@ jobs:
         run: |
           lhci autorun --config .lighthouserc.mobile.js --collect.outputPath=.lighthouseci/mobile > ./lh-mobile-logs.txt 2>&1 || true
 
-          if ls .lighthouseci/mobile/*.report.json 1> /dev/null 2>&1; then
+          echo "DEBUG: contents of .lighthouseci after Mobile run"
+          ls -la .lighthouseci || true
+
+          if ls .lighthouseci/*.report.json 1> /dev/null 2>&1; then
             echo "✅ Lighthouse CI passed: Mobile"
+            echo "LHCI_FAIL_mobile=0" >> $GITHUB_ENV
           else
             echo "❌ Lighthouse CI failed: Mobile" >> ./lh-errors.txt
             echo "LHCI_FAIL_mobile=1" >> $GITHUB_ENV
@@ -236,6 +244,20 @@ jobs:
             echo "================================"
           fi
 
+          echo "===== ✅/❌ FINAL STATUS ====="
+          if [ "$LHCI_FAIL_desktop" = "0" ]; then
+            echo "Desktop: PASSED ✅"
+          else
+            echo "Desktop: FAILED ❌"
+          fi
+
+          if [ "$LHCI_FAIL_mobile" = "0" ]; then
+            echo "Mobile: PASSED ✅"
+          else
+            echo "Mobile: FAILED ❌"
+          fi
+          echo "================================"
+
           if [ -f ./lh-errors.txt ]; then
             cat ./lh-errors.txt
             echo "================================"
@@ -243,6 +265,7 @@ jobs:
           else
             echo "✅ All Lighthouse checks passed."
           fi
+
 
 
   validate-cache-headers:
