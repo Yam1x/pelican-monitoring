@@ -220,13 +220,13 @@ jobs:
           echo "===== LIGHTHOUSE TEST SUMMARY ====="
           # Always display the captured logs from the Desktop run
           if [ -f ./lh-desktop-logs.txt ]; then
-            echo "===== ⚓︎ DESKTOP LIGHTHOUSE LOGS ====="
+            echo "===== ⚓︎ 💻 DESKTOP LIGHTHOUSE LOGS ====="
             cat ./lh-desktop-logs.txt
             echo "================================"
           fi
           # Always display the captured logs from the Mobile run
           if [ -f ./lh-mobile-logs.txt ]; then
-            echo "===== ⚓︎ MOBILE LIGHTHOUSE LOGS ====="
+            echo "===== ⚓︎ 📲 MOBILE LIGHTHOUSE LOGS ====="
             cat ./lh-mobile-logs.txt
             echo "================================"
           fi
