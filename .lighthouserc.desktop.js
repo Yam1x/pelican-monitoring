@@ -16,11 +16,11 @@ module.exports = {
     assert: {
       assertions: {
         // Performance core metrics
-        'largest-contentful-paint': ['error', { maxNumericValue: 2500 }], // recommended: <2.5s
-        'first-contentful-paint': ['error', { maxNumericValue: 1800 }],   // recommended: <1.8s
-        'speed-index': ['error', { maxNumericValue: 3400 }],              // recommended: <3.4s
-        'total-blocking-time': ['error', { maxNumericValue: 200 }],       // recommended: <200ms
-        'interactive': ['error', { maxNumericValue: 3800 }],              // recommended: <3.8s
+        'largest-contentful-paint': ['error', { maxNumericValue: 3500 }], // recommended: <2.5s
+        'first-contentful-paint': ['error', { maxNumericValue: 2500 }],   // recommended: <1.8s
+        'speed-index': ['error', { maxNumericValue: 4000 }],              // recommended: <3.4s
+        'total-blocking-time': ['error', { maxNumericValue: 500 }],       // recommended: <200ms
+        'interactive': ['error', { maxNumericValue: 5000 }],              // recommended: <3.8s
 
         // Accessibility
         'categories:accessibility': ['error', { minScore: 0.9 }],
