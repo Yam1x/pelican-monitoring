@@ -10,8 +10,8 @@ enum ResourceKind {
 }
 
 const EXPECTED_CACHE: Record<ResourceKind, string> = {
-  [ResourceKind.Static]: 'max-age=31536000',
-  [ResourceKind.Dynamic]: 'max-age=3600',
+  [ResourceKind.Static]: 'max-age=31536000', // год
+  [ResourceKind.Dynamic]: 'max-age=604800', // неделя
 };
 
 interface TestResult {
