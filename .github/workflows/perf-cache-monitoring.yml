@@ -25,7 +25,7 @@ jobs:
           run: npx playwright install --with-deps chromium
           
         - name: Run Playwright test
-          run: npx playwright test tests/playwright-tests/cache-checker.spec.ts --reporter=list > test-logs.txt 2>&1
+          run: npx playwright test tests/playwright-tests/cache-checker.spec.ts
           
         - name: Upload results
           if: always()
@@ -37,13 +37,13 @@ jobs:
               playwright-report/
               test-logs.txt  # Optional: Include the log file in artifacts for download/archive
         
-        - name: FINAL VALIDATION & SUMMARY TEST REPORT
-          if: always()
-          run: |
-            if [ -f test-logs.txt ]; then
-              echo "===== Playwright Test Logs ====="
-              cat test-logs.txt
-              echo "================================"
-            else
-              echo "No test logs found."
-            fi
+        # - name: FINAL VALIDATION & SUMMARY TEST REPORT
+        #   if: always()
+        #   run: |
+        #     if [ -f test-logs.txt ]; then
+        #       echo "===== Playwright Test Logs ====="
+        #       cat test-logs.txt
+        #       echo "================================"
+        #     else
+        #       echo "No test logs found."
+        #     fi

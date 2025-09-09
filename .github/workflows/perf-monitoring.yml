@@ -1,4 +1,4 @@
-name: Perf + Security + Accessibility Monitoring on Prod
+name: Performance + robots.txt Monitoring on Prod
 
 on:
   push:
