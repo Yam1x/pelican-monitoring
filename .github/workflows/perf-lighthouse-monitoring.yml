@@ -1,9 +1,12 @@
 name: Lighthouse Monitoring on Prod
 
 on:
-  push:
-    branches:
-      - feature/*
+  schedule:
+    - cron: '30 0 * * *'
+    - cron: '30 8 * * *'
+  # push:
+  #   branches:
+  #     - feature/*
 
 jobs:
   lighthouse:
