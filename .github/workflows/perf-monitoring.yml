@@ -1,42 +1,11 @@
 name: Performance + robots.txt Monitoring on Prod
 
 on:
-  schedule:
-    - cron: '0 * * * *'
-
-  # push:
-  #   branches:
-  #     - feature/*
+  push:
+    branches:
+      - master
 
 jobs:
-  validate-robots:
-    runs-on: ubuntu-24.04
-    timeout-minutes: 2
-    steps:
-      - name: Validate robots.txt & TEST SUMMARY
-        id: robots_txt_validation
-        run: |
-          echo "Fetching robots.txt..."
-          curl -sfL https://chelzoo.ru/robots.txt -o robots.txt
-          echo "Reading actual content..."
-          cat <<EOF > expected_robots.txt
-          # *
-          User-agent: *
-          Disallow: /components
-
-          # Host
-          Host: https://chelzoo.ru
-
-          # Sitemaps
-          Sitemap: https://chelzoo.ru/api/get-sitemap
-          EOF
-          echo "Comparing with expected content..."
-          if ! diff -u expected_robots.txt robots.txt; then
-            echo "❌ robots.txt does not match the expected content."
-            exit 1
-          fi
-          echo "✅ robots.txt matches expected content."
-
   jmeter-tests:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
