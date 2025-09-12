@@ -1,12 +1,9 @@
 name: Cache Monitoring on Prod
 
 on:
-  schedule:
-    - cron: '30 0 * * *'
-            
-  # push:
-  #   branches:
-  #     - feature/*
+  push:
+    branches:
+      - feature/*
 
 jobs:
   validate-cache-headers:
