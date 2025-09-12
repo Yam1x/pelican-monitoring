@@ -3,7 +3,7 @@ name: Cache Monitoring on Prod
 on:
   push:
     branches:
-      - feature/*
+      - master
 
 jobs:
   validate-cache-headers:
