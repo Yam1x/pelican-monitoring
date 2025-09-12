@@ -1,9 +1,12 @@
 name: Performance + robots.txt Monitoring on Prod
 
 on:
-  push:
-    branches:
-      - feature/*
+  schedule:
+    - cron: '0 * * * *'
+
+  # push:
+  #   branches:
+  #     - feature/*
 
 jobs:
   validate-robots:
