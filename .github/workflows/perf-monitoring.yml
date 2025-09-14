@@ -51,14 +51,13 @@ jobs:
       - name: Run JMeter - Home Page
         run: |
           mkdir -p ./report/home-page
-          if ! jmeter -n -t ./tests/jmeter-tests/home-page-5.jmx \
+          jmeter -n -t ./tests/jmeter-tests/home-page-5.jmx \
             -l ./report/home-page/home-page-5.jtl \
             -Jjmeter.save.saveservice.output_format=xml \
             -Jjmeter.save.saveservice.print_field_names=true \
             -Jjmeter.save.saveservice.response_data.on_error=true \
             -Jjmeter.save.saveservice.bytes=true \
-            -Jjmeter.save.saveservice.timestamp_format=ms; then
-          fi
+            -Jjmeter.save.saveservice.timestamp_format=ms;
 
           cp ./report/home-page/home-page-5.jtl ./result/home-page-5.jtl || true
 
@@ -70,14 +69,13 @@ jobs:
       - name: Run JMeter - Home Page
         run: |
           mkdir -p ./report/home-page
-          if ! jmeter -n -t ./tests/jmeter-tests/home-page-5.jmx \
+          jmeter -n -t ./tests/jmeter-tests/home-page-5.jmx \
             -l ./report/home-page/home-page-5.jtl \
             -Jjmeter.save.saveservice.output_format=xml \
             -Jjmeter.save.saveservice.print_field_names=true \
             -Jjmeter.save.saveservice.response_data.on_error=true \
             -Jjmeter.save.saveservice.bytes=true \
-            -Jjmeter.save.saveservice.timestamp_format=ms; then
-          fi
+            -Jjmeter.save.saveservice.timestamp_format=ms;
 
           cp ./report/home-page/home-page-5.jtl ./result/home-page-5.jtl || true
 
