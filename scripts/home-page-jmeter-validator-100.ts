@@ -8,7 +8,7 @@ import {
 } from "../utils";
 
 (async () => {
-  const data = readJmeterResultFile('./result/home-page.jtl');
+  const data = readJmeterResultFile('./result/home-page-100.jtl');
 
   try {
     const samples = await parseJmeterResults(data);

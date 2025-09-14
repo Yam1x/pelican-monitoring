@@ -8,7 +8,7 @@ import {
 } from "../utils";
 
 (async () => {
-  const data = readJmeterResultFile('./result/news-page.jtl');
+  const data = readJmeterResultFile('./result/home-page-30.jtl');
 
   try {
     const samples = await parseJmeterResults(data);
@@ -25,10 +25,10 @@ import {
       totalBytes,
       totalKB,
       totalMB
-    } = calculateTotalDataSize(samples)
-
+    } = calculateTotalDataSize(samples);
+    
     printJmeterReport({
-      pageName: 'News Page',
+      pageName: 'Home Page',
       errorCount,
       avg,
       max,
@@ -38,7 +38,7 @@ import {
       totalKB,
       totalMB
     });
-    
+
     printJmeterIssues({
       max,
       avg,

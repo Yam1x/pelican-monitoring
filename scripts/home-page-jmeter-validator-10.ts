@@ -8,7 +8,7 @@ import {
 } from "../utils";
 
 (async () => {
-  const data = readJmeterResultFile('./result/documents-page.jtl');
+  const data = readJmeterResultFile('./result/home-page-10.jtl');
 
   try {
     const samples = await parseJmeterResults(data);
@@ -26,9 +26,9 @@ import {
       totalKB,
       totalMB
     } = calculateTotalDataSize(samples);
-
+    
     printJmeterReport({
-      pageName: 'Documents Page',
+      pageName: 'Home Page',
       errorCount,
       avg,
       max,
@@ -43,7 +43,7 @@ import {
       max,
       avg,
       errorCount
-    })
+    });
   } catch (err: any) {
     console.error(`Error while parsing results: ${err.message}`);
     process.exit(1);
