@@ -3,6 +3,9 @@ name: Performance + robots.txt Monitoring on Prod
 on:
   schedule:
     - cron: '0 * * * *'
+  push:
+    branches:
+      - feature/**
 
 env:
   WORKFLOW_RUN_LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
