@@ -61,7 +61,7 @@ jobs:
 
             curl -s -X POST 'https://api.telegram.org/bot${PELICAN_MONITORING_BOT_TELEGRAM_TOKEN}/sendMessage' \
             -d "chat_id=${PELICAN_MONITORING_FAILED_TESTS_TELEGRAM_CHAT_ID}&text=$(cat message.txt)" > /dev/null 2>&1
-
+          fi
 
   jmeter-tests:
     runs-on: ubuntu-24.04
