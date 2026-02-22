@@ -47,7 +47,7 @@ jobs:
           PELICAN_MONITORING_SUCCESSFUL_TESTS_TELEGRAM_CHAT_ID: ${{ secrets.PELICAN_MONITORING_SUCCESSFUL_TESTS_TELEGRAM_CHAT_ID }}
           PELICAN_MONITORING_FAILED_TESTS_TELEGRAM_CHAT_ID: ${{ secrets.PELICAN_MONITORING_FAILED_TESTS_TELEGRAM_CHAT_ID }}
         run: |
-          if [ "$TEST_STATUS" == "success"]; then
+          if [ "${TEST_STATUS}" == "success"]; then
             echo "Тестирование индексации пройдено успешно" > message.txt
             
             echo ${{ env.WORKFLOW_RUN_LINK }} >> message.txt
