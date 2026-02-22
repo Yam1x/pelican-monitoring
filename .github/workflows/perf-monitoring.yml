@@ -52,7 +52,7 @@ jobs:
             
             echo ${{ env.WORKFLOW_RUN_LINK }} >> message.txt
 
-            curl -s -X POST 'https://api.telegram.org/bot${PELICAN_MONITORING_BOT_TELEGRAM_TOKEN}/sendMessage' \
+            curl -s -X POST "https://api.telegram.org/bot${PELICAN_MONITORING_BOT_TELEGRAM_TOKEN}/sendMessage" \
             -d "chat_id=${PELICAN_MONITORING_SUCCESSFUL_TESTS_TELEGRAM_CHAT_ID}&text=$(cat message.txt)"
           else
             echo "Возникла ошибка при проверке индексации" > message.txt
