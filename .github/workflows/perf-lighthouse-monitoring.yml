@@ -4,9 +4,9 @@ on:
   schedule:
     - cron: '30 0 * * *'
     - cron: '30 8 * * *'
-  # push:
-  #   branches:
-  #     - feature/*
+
+env:
+  WORKFLOW_RUN_LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
 jobs:
   lighthouse:
@@ -62,6 +62,7 @@ jobs:
 
         - name: Final validation & summary
           if: always()
+          id: validation
           run: |
             echo "===== LIGHTHOUSE TEST SUMMARY ====="
             if [ -f ./lh-errors.txt ]; then
@@ -71,3 +72,23 @@ jobs:
             else
               echo "✅ All Lighthouse checks passed."
             fi
+
+        - name: Send notification to telegram chat
+          if: always()
+          env:
+            TEST_STATUS: ${{ steps.validation.outcome }}
+          run: |
+            if [ "$TEST_STATUS" == "success"]; then
+              echo "Тестирование производительности через Lighthouse пройдено успешно" > message.txt
+              
+              echo ${{ env.WORKFLOW_RUN_LINK }} >> message.txt
+
+              curl -s -X POST 'https://api.telegram.org/bot${{ secrets.PELICAN_MONITORING_BOT_TELEGRAM_TOKEN }}/sendMessage' \
+              -d "chat_id=${{ secrets.PELICAN_MONITORING_SUCCESSFUL_TESTS_TELEGRAM_CHAT_ID }}&text=$(cat message.txt)" > /dev/null 2>&1
+            else
+              echo "Возникла ошибка при тестировании производительности через Lighthouse" > message.txt
+
+              echo ${{ env.WORKFLOW_RUN_LINK }} >> message.txt
+
+              curl -s -X POST 'https://api.telegram.org/bot${{ secrets.PELICAN_MONITORING_BOT_TELEGRAM_TOKEN }}/sendMessage' \
+              -d "chat_id=${{ secrets.PELICAN_MONITORING_FAILED_TESTS_TELEGRAM_CHAT_ID }}&text=$(cat message.txt)" > /dev/null 2>&1

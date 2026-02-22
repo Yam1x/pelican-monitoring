@@ -4,9 +4,8 @@ on:
   schedule:
     - cron: '30 0 * * *'
             
-  # push:
-  #   branches:
-  #     - feature/*
+env:
+  WORKFLOW_RUN_LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
 jobs:
   validate-cache-headers:
@@ -28,6 +27,7 @@ jobs:
           run: npx playwright install --with-deps chromium
           
         - name: Run Playwright test
+          id: playwright_test
           run: npx playwright test tests/playwright-tests/cache-checker.spec.ts
           
         - name: Upload results
@@ -40,6 +40,26 @@ jobs:
               playwright-report/
               test-logs.txt  # Optional: Include the log file in artifacts for download/archive
         
+        - name: Send notification to telegram chat
+          if: always()
+          env:
+            TEST_STATUS: ${{ steps.playwright_test.outcome }}
+          run: |
+            if [ "$TEST_STATUS" == "success"]; then
+              echo "Хедеры кэширования проверены успешно" > message.txt
+              
+              echo ${{ env.WORKFLOW_RUN_LINK }} >> message.txt
+
+              curl -s -X POST 'https://api.telegram.org/bot${{ secrets.PELICAN_MONITORING_BOT_TELEGRAM_TOKEN }}/sendMessage' \
+              -d "chat_id=${{ secrets.PELICAN_MONITORING_SUCCESSFUL_TESTS_TELEGRAM_CHAT_ID }}&text=$(cat message.txt)" > /dev/null 2>&1
+            else
+              echo "Возникла ошибка при проверке хедеров кеширования" > message.txt
+
+              echo ${{ env.WORKFLOW_RUN_LINK }} >> message.txt
+
+              curl -s -X POST 'https://api.telegram.org/bot${{ secrets.PELICAN_MONITORING_BOT_TELEGRAM_TOKEN }}/sendMessage' \
+              -d "chat_id=${{ secrets.PELICAN_MONITORING_FAILED_TESTS_TELEGRAM_CHAT_ID }}&text=$(cat message.txt)" > /dev/null 2>&1
+
         # - name: FINAL VALIDATION & SUMMARY TEST REPORT
         #   if: always()
         #   run: |

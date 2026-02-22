@@ -4,9 +4,8 @@ on:
   schedule:
     - cron: '0 * * * *'
 
-  # push:
-  #   branches:
-  #     - feature/*
+env:
+  WORKFLOW_RUN_LINK: "https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
 jobs:
   validate-robots:
@@ -36,6 +35,27 @@ jobs:
             exit 1
           fi
           echo "✅ robots.txt matches expected content."
+
+      - name: Send notification to telegram chat
+        if: always()
+        env:
+          TEST_STATUS: ${{ steps.robots_txt_validation.outcome }}
+        run: |
+          if [ "$TEST_STATUS" == "success"]; then
+            echo "Тестирование индексации пройдено успешно" > message.txt
+            
+            echo ${{ env.WORKFLOW_RUN_LINK }} >> message.txt
+
+            curl -s -X POST 'https://api.telegram.org/bot${{ secrets.PELICAN_MONITORING_BOT_TELEGRAM_TOKEN }}/sendMessage' \
+            -d "chat_id=${{ secrets.PELICAN_MONITORING_SUCCESSFUL_TESTS_TELEGRAM_CHAT_ID }}&text=$(cat message.txt)" > /dev/null 2>&1
+          else
+            echo "Возникла ошибка при проверке индексации" > message.txt
+
+            echo ${{ env.WORKFLOW_RUN_LINK }} >> message.txt
+
+            curl -s -X POST 'https://api.telegram.org/bot${{ secrets.PELICAN_MONITORING_BOT_TELEGRAM_TOKEN }}/sendMessage' \
+            -d "chat_id=${{ secrets.PELICAN_MONITORING_FAILED_TESTS_TELEGRAM_CHAT_ID }}&text=$(cat message.txt)" > /dev/null 2>&1
+
 
   jmeter-tests:
     runs-on: ubuntu-24.04
@@ -138,7 +158,8 @@ jobs:
 
           cp ./report/news-page/news-page.jtl ./result/news-page.jtl || true
 
-      - name: FINAL VALIDATION & SUMMARY TEST REPORT 
+      - name: FINAL VALIDATION & SUMMARY TEST REPORT
+        id: jmeter_validation
         run: |
           if ! npx tsx scripts/home-page-jmeter-validator.ts; then
             echo "PARSER_FAIL_homePage=1" >> $GITHUB_ENV
@@ -163,3 +184,23 @@ jobs:
           else
             echo "✅ All JMeter tests and parsers passed."
           fi
+
+      - name: Send notification to telegram chat
+        if: always()
+        env:
+          TEST_STATUS: ${{ steps.jmeter_validation.outcome }}
+        run: |
+          if [ "$TEST_STATUS" == "success"]; then
+            echo "Тестирование производительности через JMeter пройдено успешно" > message.txt
+            
+            echo ${{ env.WORKFLOW_RUN_LINK }} >> message.txt
+
+            curl -s -X POST 'https://api.telegram.org/bot${{ secrets.PELICAN_MONITORING_BOT_TELEGRAM_TOKEN }}/sendMessage' \
+            -d "chat_id=${{ secrets.PELICAN_MONITORING_SUCCESSFUL_TESTS_TELEGRAM_CHAT_ID }}&text=$(cat message.txt)" > /dev/null 2>&1
+          else
+            echo "Возникла ошибка при тестировании производительности через JMeter" > message.txt
+
+            echo ${{ env.WORKFLOW_RUN_LINK }} >> message.txt
+
+            curl -s -X POST 'https://api.telegram.org/bot${{ secrets.PELICAN_MONITORING_BOT_TELEGRAM_TOKEN }}/sendMessage' \
+            -d "chat_id=${{ secrets.PELICAN_MONITORING_FAILED_TESTS_TELEGRAM_CHAT_ID }}&text=$(cat message.txt)" > /dev/null 2>&1
